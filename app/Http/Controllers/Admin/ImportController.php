@@ -431,7 +431,7 @@ class ImportController extends Controller
         $user->role = User::ROLE_PEMBIMBING;
 
         if (! $user->exists) {
-            $user->password = Hash::make('Wikrama'.$row[0].'*');
+            $user->password = $this->generatedPasswordHash('Wikrama'.$row[0].'*');
         }
 
         $user->save();
@@ -454,11 +454,16 @@ class ImportController extends Controller
         $user->role = User::ROLE_ORANG_TUA;
 
         if (! $user->exists) {
-            $user->password = Hash::make('Wikrama'.substr($nis, -4).'*');
+            $user->password = $this->generatedPasswordHash('Wikrama'.substr($nis, -4).'*');
         }
 
         $user->save();
 
         return $user;
+    }
+
+    private function generatedPasswordHash(string $password): string
+    {
+        return Hash::make($password, ['rounds' => 8]);
     }
 }
