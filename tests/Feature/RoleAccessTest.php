@@ -37,6 +37,18 @@ class RoleAccessTest extends TestCase
             ->assertOk();
     }
 
+    public function test_admin_can_generate_report_pdf(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+
+        $response = $this->actingAs($admin)
+            ->get('/admin/laporan/pdf')
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+
+        $this->assertStringStartsWith('%PDF', $response->getContent());
+    }
+
     public function test_parent_cannot_access_petugas_payment_area(): void
     {
         $parent = User::factory()->create(['role' => User::ROLE_ORANG_TUA]);

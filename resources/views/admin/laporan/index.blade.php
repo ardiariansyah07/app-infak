@@ -8,10 +8,16 @@
         <h2 class="fw-bold mb-1">Laporan Infak</h2>
         <p class="text-muted mb-0">Ringkasan untuk administrasi sekolah dan bahan laporan kepada kepala sekolah.</p>
     </div>
-    <button class="btn btn-outline-secondary" onclick="window.print()">
-        <i class="bi bi-printer"></i>
-        Cetak
-    </button>
+    <div class="d-flex gap-2">
+        <a href="{{ route('admin.laporan.pdf', ['periode' => $periode]) }}" class="btn btn-primary">
+            <i class="bi bi-filetype-pdf"></i>
+            Generate PDF
+        </a>
+        <button class="btn btn-outline-secondary" onclick="window.print()">
+            <i class="bi bi-printer"></i>
+            Cetak
+        </button>
+    </div>
 </div>
 
 <form method="GET" class="card border-0 shadow-sm mb-4">

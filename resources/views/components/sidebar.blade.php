@@ -12,7 +12,7 @@
 <div id="sidebar" class="sidebar">
     <div class="sidebar-header">
         <div class="sidebar-logo">
-            <i class="bi bi-wallet2"></i>
+            <img src="{{ asset('images/logo-infak.png') }}" alt="Logo Infak" class="sidebar-logo-img">
             <span class="menu-text">Sistem Infak</span>
         </div>
         <div class="sidebar-subtitle">

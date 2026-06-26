@@ -100,9 +100,30 @@ body{
 
 .sidebar-logo{
 
-    font-size:28px;
+    font-size:26px;
 
     font-weight:700;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:10px;
+}
+
+.sidebar-logo-img{
+
+    width:42px;
+
+    height:42px;
+
+    object-fit:contain;
+
+    border-radius:10px;
+
+    background:#fff;
 }
 
 .sidebar-subtitle{

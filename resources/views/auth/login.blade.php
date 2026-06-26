@@ -14,7 +14,7 @@
 
                 <div class="brand-mark mb-4">
 
-                    <i class="bi bi-wallet2 fs-1"></i>
+                    <img src="{{ asset('images/logo-infak.png') }}" alt="Logo Infak">
 
                 </div>
 
@@ -83,7 +83,7 @@
                 <div class="text-center mb-4">
 
                     <div class="brand-mark text-white mb-3">
-                        <i class="bi bi-wallet2 fs-2"></i>
+                        <img src="{{ asset('images/logo-infak.png') }}" alt="Logo Infak">
                     </div>
 
                     <h3 class="fw-bold mt-3">

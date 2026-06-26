@@ -30,6 +30,14 @@ body{
     box-shadow:0 18px 40px rgba(30,58,138,.28);
 }
 
+.brand-mark img{
+    width:54px;
+    height:54px;
+    object-fit:contain;
+    border-radius:14px;
+    background:#fff;
+}
+
 .overview-item{
     display:flex;
     align-items:flex-start;
