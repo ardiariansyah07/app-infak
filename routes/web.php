@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\GuruController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\KomitmenInfakController;
+use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\Admin\RayonController as AdminRayonController;
 /*
 |--------------------------------------------------------------------------
@@ -139,6 +140,9 @@ Route::prefix('admin')
 
         Route::patch('pembayaran/{pembayaran}/verify', [PembayaranController::class, 'verify'])
             ->name('pembayaran.verify');
+
+        Route::get('laporan', [LaporanController::class, 'index'])
+            ->name('laporan.index');
 
     });
 

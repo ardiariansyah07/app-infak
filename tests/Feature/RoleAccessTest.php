@@ -28,6 +28,15 @@ class RoleAccessTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_admin_can_access_report_menu(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+
+        $this->actingAs($admin)
+            ->get('/admin/laporan')
+            ->assertOk();
+    }
+
     public function test_parent_cannot_access_petugas_payment_area(): void
     {
         $parent = User::factory()->create(['role' => User::ROLE_ORANG_TUA]);

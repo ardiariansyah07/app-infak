@@ -31,7 +31,43 @@
 
 <body>
 
+    {{ $slot ?? '' }}
+
     @yield('content')
+
+<script>
+document.querySelectorAll('[data-password-checklist]').forEach(checklist => {
+    const input = document.getElementById(checklist.dataset.passwordChecklist);
+
+    if(!input){
+        return;
+    }
+
+    const rules = {
+        length: value => value.length >= 8,
+        upper: value => /[A-Z]/.test(value),
+        lower: value => /[a-z]/.test(value),
+        symbol: value => /[^A-Za-z0-9]/.test(value),
+    };
+
+    const updateChecklist = () => {
+        Object.entries(rules).forEach(([rule, passes]) => {
+            const item = checklist.querySelector(`[data-rule="${rule}"]`);
+            const icon = item?.querySelector('i');
+
+            if(!item || !icon){
+                return;
+            }
+
+            item.classList.toggle('valid', passes(input.value));
+            icon.className = passes(input.value) ? 'bi bi-check-circle-fill' : 'bi bi-circle';
+        });
+    };
+
+    input.addEventListener('input', updateChecklist);
+    updateChecklist();
+});
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 

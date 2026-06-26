@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\PasswordPolicy;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -33,7 +34,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'role' => ['required', Rule::in(array_keys($this->roles()))],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', PasswordPolicy::rule(), 'confirmed'],
         ]);
 
         User::create($validated);
@@ -58,7 +59,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'role' => ['required', Rule::in(array_keys($this->roles()))],
-            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'password' => ['nullable', PasswordPolicy::rule(), 'confirmed'],
         ]);
 
         if (blank($validated['password'])) {

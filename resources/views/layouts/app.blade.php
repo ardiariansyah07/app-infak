@@ -37,6 +37,16 @@
 
         </div>
 
+        <footer class="app-footer">
+            © {{ date('Y') }} Sistem Informasi Infak Sekolah · Dikembangkan oleh
+            <a
+                href="https://www.instagram.com/ardiariansyah07"
+                target="_blank"
+                rel="noopener noreferrer">
+                Ardi Ariansyah
+            </a>
+        </footer>
+
     </div>
 
     @include('components.scripts')

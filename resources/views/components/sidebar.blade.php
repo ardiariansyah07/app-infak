@@ -80,6 +80,13 @@
                 </a>
             </div>
         </div>
+
+        <div class="menu-group">LAPORAN</div>
+        <div class="sidebar-menu">
+            <a href="{{ route('admin.laporan.index') }}" class="{{ request()->is('admin/laporan*') ? 'active' : '' }}">
+                <i class="bi bi-file-earmark-bar-graph"></i><span class="menu-text">Laporan</span>
+            </a>
+        </div>
     @endif
 
     @if($role === 'petugas_infak')

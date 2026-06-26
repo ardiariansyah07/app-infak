@@ -25,6 +25,7 @@
                             name="password"
                             required autocomplete="new-password" />
 
+            @include('components.password-checklist', ['target' => 'password'])
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
 

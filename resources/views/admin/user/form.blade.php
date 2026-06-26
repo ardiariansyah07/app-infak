@@ -43,7 +43,8 @@
 
                 <div class="col-md-6">
                     <label class="form-label">Password {{ $user->exists ? '(kosongkan jika tidak diganti)' : '' }}</label>
-                    <input type="password" name="password" class="form-control" @required(! $user->exists)>
+                    <input id="password" type="password" name="password" class="form-control" @required(! $user->exists)>
+                    @include('components.password-checklist', ['target' => 'password'])
                     @error('password')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                 </div>
 

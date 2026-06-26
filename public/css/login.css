@@ -87,3 +87,32 @@ body{
     color:var(--primary-hover);
     text-decoration:underline;
 }
+
+.password-checklist{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:7px;
+    margin-top:10px;
+    color:#64748b;
+    font-size:13px;
+    text-align:left;
+}
+
+.password-check-item{
+    display:flex;
+    align-items:center;
+    gap:7px;
+}
+
+.password-check-item i{
+    color:#94a3b8;
+}
+
+.password-check-item.valid{
+    color:#166534;
+    font-weight:600;
+}
+
+.password-check-item.valid i{
+    color:#16a34a;
+}

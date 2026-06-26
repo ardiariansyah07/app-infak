@@ -45,6 +45,14 @@ class PembayaranController extends Controller
             'tagihan_infak_ids.*' => ['exists:tagihan_infak,id'],
         ]);
 
+        if (! empty($validated['tagihan_infak_ids'])) {
+            $allowedTagihanCount = TagihanInfak::whereIn('id', $validated['tagihan_infak_ids'])
+                ->whereHas('siswaAkademik', fn ($query) => $query->where('siswa_id', $validated['siswa_id']))
+                ->count();
+
+            abort_if($allowedTagihanCount !== count($validated['tagihan_infak_ids']), 403);
+        }
+
         DB::transaction(function () use ($validated) {
             $pembayaran = Pembayaran::create([
                 'siswa_id' => $validated['siswa_id'],

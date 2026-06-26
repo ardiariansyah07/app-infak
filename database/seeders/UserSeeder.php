@@ -15,7 +15,7 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        $password = Hash::make('password123');
+        $password = Hash::make('Infak#2026');
 
         $admin = User::updateOrCreate(
             ['email' => 'admin@infak.test'],
@@ -87,7 +87,7 @@ class UserSeeder extends Seeder
             ]
         );
 
-        $this->command?->info('Akun dummy dibuat. Password semua akun: password123');
+        $this->command?->info('Akun dummy dibuat. Password semua akun: Infak#2026');
         $this->command?->line('admin@infak.test | petugas@infak.test | pembimbing@infak.test | siswa@infak.test');
     }
 }
