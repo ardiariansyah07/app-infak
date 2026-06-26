@@ -79,8 +79,11 @@ class ImportController extends Controller
     {
         abort_unless(isset($this->templates[$master]), 404);
 
+        @set_time_limit(0);
+        @ini_set('memory_limit', '512M');
+
         $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx', 'max:4096'],
+            'file' => ['required', 'file', 'mimes:xlsx', 'max:10240'],
         ]);
 
         try {
@@ -197,11 +200,23 @@ class ImportController extends Controller
     {
         $count = 0;
         $validRows = [];
+        $userCache = [];
+        $affectedSiswaIds = [];
+
+        $tahunMap = TahunAjaran::whereIn('nama', collect($rows)->pluck(4)->filter()->unique()->values())
+            ->get()
+            ->keyBy('nama');
+        $rombelMap = Rombel::whereIn('nama', collect($rows)->pluck(6)->filter()->unique()->values())
+            ->get()
+            ->keyBy('nama');
+        $rayonMap = Rayon::whereIn('nama', collect($rows)->pluck(7)->filter()->unique()->values())
+            ->get()
+            ->keyBy('nama');
 
         foreach ($rows as $row) {
-            $tahun = TahunAjaran::where('nama', $row[4] ?? null)->first();
-            $rombel = Rombel::where('nama', $row[6] ?? null)->first();
-            $rayon = Rayon::where('nama', $row[7] ?? null)->first();
+            $tahun = $tahunMap->get($row[4] ?? null);
+            $rombel = $rombelMap->get($row[6] ?? null);
+            $rayon = $rayonMap->get($row[7] ?? null);
 
             if (empty($row[0]) || empty($row[1]) || ! $tahun || ! $rombel || ! $rayon) {
                 continue;
@@ -217,35 +232,49 @@ class ImportController extends Controller
             );
         });
 
-        foreach ($validRows as $data) {
-            DB::transaction(function () use ($data) {
-                ['row' => $row, 'tahun' => $tahun, 'rombel' => $rombel, 'rayon' => $rayon] = $data;
-                $user = $this->userForSiswa($row);
+        foreach (array_chunk($validRows, 200) as $chunk) {
+            DB::transaction(function () use ($chunk, &$userCache, &$affectedSiswaIds) {
+                foreach ($chunk as $data) {
+                    ['row' => $row, 'tahun' => $tahun, 'rombel' => $rombel, 'rayon' => $rayon] = $data;
+                    $email = $row[8] ?? null;
+                    $user = null;
 
-                $siswa = Siswa::updateOrCreate(
-                    ['nis' => $row[0]],
-                    [
-                        'user_id' => $user?->id,
-                        'nama' => $row[1],
-                        'jenis_kelamin' => in_array($row[2] ?? null, ['L', 'P']) ? $row[2] : 'L',
-                        'status' => in_array($row[3] ?? null, ['aktif', 'alumni']) ? $row[3] : 'aktif',
-                    ]
-                );
+                    if ($email) {
+                        if (! array_key_exists($email, $userCache)) {
+                            $userCache[$email] = $this->userForSiswa($row);
+                        }
 
-                $siswa->akademik()->updateOrCreate(
-                    ['tahun_ajaran_id' => $tahun->id],
-                    [
-                        'tingkat' => in_array($row[5] ?? null, ['X', 'XI', 'XII']) ? $row[5] : 'X',
-                        'rombel_id' => $rombel->id,
-                        'rayon_id' => $rayon->id,
-                        'status' => 'naik',
-                    ]
-                );
+                        $user = $userCache[$email];
+                    }
 
-                AkademikStatus::syncSiswa($siswa);
+                    $siswa = Siswa::updateOrCreate(
+                        ['nis' => $row[0]],
+                        [
+                            'user_id' => $user?->id,
+                            'nama' => $row[1],
+                            'jenis_kelamin' => in_array($row[2] ?? null, ['L', 'P']) ? $row[2] : 'L',
+                            'status' => in_array($row[3] ?? null, ['aktif', 'alumni']) ? $row[3] : 'aktif',
+                        ]
+                    );
+
+                    $siswa->akademik()->updateOrCreate(
+                        ['tahun_ajaran_id' => $tahun->id],
+                        [
+                            'tingkat' => in_array($row[5] ?? null, ['X', 'XI', 'XII']) ? $row[5] : 'X',
+                            'rombel_id' => $rombel->id,
+                            'rayon_id' => $rayon->id,
+                            'status' => 'naik',
+                        ]
+                    );
+
+                    $affectedSiswaIds[] = $siswa->id;
+                }
             });
-            $count++;
+
+            $count += count($chunk);
         }
+
+        AkademikStatus::syncMany($affectedSiswaIds);
 
         return $count;
     }
@@ -397,14 +426,17 @@ class ImportController extends Controller
             return null;
         }
 
-        return User::updateOrCreate(
-            ['email' => $email],
-            [
-                'name' => $row[1],
-                'password' => Hash::make('Wikrama'.$row[0].'*'),
-                'role' => User::ROLE_PEMBIMBING,
-            ]
-        );
+        $user = User::firstOrNew(['email' => $email]);
+        $user->name = $row[1];
+        $user->role = User::ROLE_PEMBIMBING;
+
+        if (! $user->exists) {
+            $user->password = Hash::make('Wikrama'.$row[0].'*');
+        }
+
+        $user->save();
+
+        return $user;
     }
 
     private function userForSiswa(array $row): ?User
@@ -417,13 +449,16 @@ class ImportController extends Controller
 
         $nis = (string) $row[0];
 
-        return User::updateOrCreate(
-            ['email' => $email],
-            [
-                'name' => $row[1],
-                'password' => Hash::make('Wikrama'.substr($nis, -4).'*'),
-                'role' => User::ROLE_ORANG_TUA,
-            ]
-        );
+        $user = User::firstOrNew(['email' => $email]);
+        $user->name = $row[1];
+        $user->role = User::ROLE_ORANG_TUA;
+
+        if (! $user->exists) {
+            $user->password = Hash::make('Wikrama'.substr($nis, -4).'*');
+        }
+
+        $user->save();
+
+        return $user;
     }
 }
