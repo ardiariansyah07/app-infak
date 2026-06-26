@@ -381,7 +381,7 @@ document
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    const pageSize = 20;
+    const pageSize = 10;
 
     document
         .querySelectorAll('table')
