@@ -38,7 +38,7 @@
         </div>
 
         <footer class="app-footer">
-            © {{ date('Y') }} Sistem Informasi Infak Sekolah · Dikembangkan oleh
+            © {{ date('Y') }} Sistem Informasi Infak Sekolah · {{ \App\Support\AppVersion::current() }} · Dikembangkan oleh
             <a
                 href="https://www.instagram.com/ardiariansyah07"
                 target="_blank"
