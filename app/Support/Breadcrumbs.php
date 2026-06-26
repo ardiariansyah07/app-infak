@@ -85,7 +85,7 @@ class Breadcrumbs
         $labels = [
             'admin' => [
                 'tahun-ajaran' => 'Tahun Ajaran',
-                'guru' => 'Guru',
+                'guru' => 'Pembimbing Rayon',
                 'rayon' => 'Rayon',
                 'rombel' => 'Rombel',
                 'siswa' => 'Siswa',

@@ -49,7 +49,7 @@
                     <i class="bi bi-calendar-range"></i><span class="menu-text">Tahun Ajaran</span>
                 </a>
                 <a href="{{ route('admin.guru.index') }}" class="submenu {{ request()->is('admin/guru*') ? 'active' : '' }}">
-                    <i class="bi bi-person-workspace"></i><span class="menu-text">Guru</span>
+                    <i class="bi bi-person-workspace"></i><span class="menu-text">Pembimbing Rayon</span>
                 </a>
                 <a href="{{ route('admin.rayon.index') }}" class="submenu {{ request()->is('admin/rayon*') ? 'active' : '' }}">
                     <i class="bi bi-diagram-3"></i><span class="menu-text">Rayon</span>

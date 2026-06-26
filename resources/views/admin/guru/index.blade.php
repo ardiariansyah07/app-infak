@@ -8,13 +8,13 @@
 
         <h2 class="fw-bold mb-1">
 
-            Guru
+            Pembimbing Rayon
 
         </h2>
 
         <p class="text-muted">
 
-            Kelola data guru sekolah
+            Kelola data pembimbing rayon sekolah
 
         </p>
 
@@ -28,7 +28,7 @@
 
             <i class="bi bi-plus-circle"></i>
 
-            Tambah Guru
+            Tambah Pembimbing Rayon
 
         </a>
 
@@ -47,8 +47,6 @@
                 <thead class="table-light">
 
                     <tr>
-
-                        <th width="70">No</th>
 
                         <th>NIP</th>
 
@@ -71,12 +69,6 @@
                 @forelse($data as $guru)
 
                     <tr>
-
-                        <td>
-
-                            {{ $loop->iteration }}
-
-                        </td>
 
                         <td>
 
@@ -167,7 +159,7 @@
 
                             <br><br>
 
-                            Belum ada data Guru.
+                            Belum ada data pembimbing rayon.
 
                         </td>
 

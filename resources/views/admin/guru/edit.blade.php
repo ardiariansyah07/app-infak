@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'Edit Guru')
+@section('title', 'Edit Pembimbing Rayon')
 
 @section('content')
 <div class="mb-4">
-    <h2 class="fw-bold mb-1">Edit Guru</h2>
-    <p class="text-muted mb-0">Perbarui data guru sekolah.</p>
+    <h2 class="fw-bold mb-1">Edit Pembimbing Rayon</h2>
+    <p class="text-muted mb-0">Perbarui data pembimbing rayon sekolah.</p>
 </div>
 
 @if ($errors->any())
@@ -54,7 +54,7 @@
             <div class="col-md-12">
                 <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" name="aktif" value="1" id="aktif" @checked(old('aktif', $guru->aktif))>
-                    <label class="form-check-label" for="aktif">Guru Aktif</label>
+                    <label class="form-check-label" for="aktif">Pembimbing Aktif</label>
                 </div>
             </div>
         </div>
