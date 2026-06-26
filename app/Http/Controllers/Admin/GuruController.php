@@ -13,7 +13,7 @@ class GuruController extends Controller
      */
     public function index()
     {
-        $data = Guru::latest()->get();
+        $data = Guru::orderBy('nip')->get();
 
         return view(
             'admin.guru.index',
