@@ -190,11 +190,19 @@
 
                 <hr>
 
-                <div class="text-center text-muted">
+                <div class="text-center text-muted app-credit">
 
                     © {{ date('Y') }}
 
                     Sistem Informasi Infak Sekolah
+                    <br>
+                    Dikembangkan oleh
+                    <a
+                        href="https://www.instagram.com/ardiariansyah07"
+                        target="_blank"
+                        rel="noopener noreferrer">
+                        Ardi Ariansyah
+                    </a>
 
                 </div>
 

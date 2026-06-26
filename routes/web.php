@@ -4,17 +4,18 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\GuruController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\KomitmenInfakController;
+use App\Http\Controllers\Admin\RayonController as AdminRayonController;
 /*
 |--------------------------------------------------------------------------
 | Controller Admin
 |--------------------------------------------------------------------------
 */
 
-use App\Http\Controllers\Admin\RayonController as AdminRayonController;
 use App\Http\Controllers\Admin\RombelController;
 use App\Http\Controllers\Admin\SiswaController;
 use App\Http\Controllers\Admin\TagihanInfakController;
 use App\Http\Controllers\Admin\TahunAjaranController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Ortu\DashboardController as OrtuDashboardController;
 use App\Http\Controllers\Ortu\KomitmenInfakController as OrtuKomitmenInfakController;
 use App\Http\Controllers\Ortu\PembayaranController as OrtuPembayaranController;
@@ -121,6 +122,8 @@ Route::prefix('admin')
         Route::resource('rombel', RombelController::class)->except(['show']);
 
         Route::resource('siswa', SiswaController::class)->except(['show']);
+
+        Route::resource('user', UserController::class)->except(['show']);
 
         Route::resource('komitmen-infak', KomitmenInfakController::class)
             ->except(['show'])

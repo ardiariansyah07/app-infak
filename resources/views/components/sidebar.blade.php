@@ -54,6 +54,13 @@
             </div>
         </div>
 
+        <div class="menu-group">AKSES</div>
+        <div class="sidebar-menu">
+            <a href="{{ route('admin.user.index') }}" class="{{ request()->is('admin/user*') ? 'active' : '' }}">
+                <i class="bi bi-person-gear"></i><span class="menu-text">User & Role</span>
+            </a>
+        </div>
+
         <div class="menu-group">TRANSAKSI</div>
         <div class="sidebar-menu">
             <a href="#" onclick="toggleTransaksi(event)">

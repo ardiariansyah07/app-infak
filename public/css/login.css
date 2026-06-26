@@ -1,12 +1,22 @@
+:root{
+    --primary:#1e3a8a;
+    --primary-hover:#172554;
+    --primary-deep:#312e81;
+    --primary-deep-hover:#1e1b4b;
+    --sidebar-bg-1:#0f172a;
+    --sidebar-bg-2:#1e293b;
+    --body-bg:#f1f5f9;
+}
+
 body{
-    background:#f1f5f9;
+    background:var(--body-bg);
     color:#0f172a;
 }
 
 .login-left{
     background:
-        radial-gradient(circle at 18% 20%, rgba(79,70,229,.35), transparent 26%),
-        linear-gradient(180deg,#0f172a,#1e293b);
+        radial-gradient(circle at 18% 20%, rgba(30,58,138,.22), transparent 28%),
+        linear-gradient(180deg,var(--sidebar-bg-1),var(--sidebar-bg-2));
 }
 
 .brand-mark{
@@ -16,8 +26,8 @@ body{
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    background:linear-gradient(135deg,#1e3a8a,#312e81);
-    box-shadow:0 18px 40px rgba(37,99,235,.35);
+    background:linear-gradient(135deg,var(--primary),var(--primary-deep));
+    box-shadow:0 18px 40px rgba(30,58,138,.28);
 }
 
 .overview-item{
@@ -53,8 +63,27 @@ body{
 }
 
 .login-card .btn-primary{
-    background:linear-gradient(135deg,#1e3a8a,#312e81);
+    background:linear-gradient(135deg,var(--primary),var(--primary-deep));
     border:0;
     border-radius:12px;
-    box-shadow:0 14px 28px rgba(37,99,235,.25);
+    box-shadow:0 14px 28px rgba(30,58,138,.24);
+}
+
+.login-card .btn-primary:hover{
+    background:linear-gradient(135deg,var(--primary-hover),var(--primary-deep-hover));
+}
+
+.app-credit{
+    font-size:.9rem;
+}
+
+.app-credit a{
+    color:var(--primary);
+    font-weight:700;
+    text-decoration:none;
+}
+
+.app-credit a:hover{
+    color:var(--primary-hover);
+    text-decoration:underline;
 }

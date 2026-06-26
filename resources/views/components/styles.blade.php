@@ -434,6 +434,48 @@ body{
     border-radius:12px;
 }
 
+.import-actions,
+.import-actions form,
+.import-action-btn{
+
+    white-space:nowrap;
+}
+
+.import-action-btn{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:8px;
+
+    min-height:44px;
+}
+
+.import-file{
+
+    width:240px;
+
+    min-height:44px;
+}
+
+@media (max-width: 768px){
+
+    .import-actions{
+
+        flex-wrap:wrap !important;
+
+        justify-content:flex-start !important;
+    }
+
+    .import-file{
+
+        width:min(100%, 240px);
+    }
+}
+
 /* ===================================
    BADGE
 =================================== */
