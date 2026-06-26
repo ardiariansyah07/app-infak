@@ -15,13 +15,32 @@ use Illuminate\Support\Facades\DB;
 
 class SiswaController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $data = Siswa::with('akademikAktif.rombel', 'akademikAktif.rayon', 'orangTua')
-            ->latest()
-            ->get();
+        $search = $request->string('q')->toString();
 
-        return view('admin.siswa.index', compact('data'));
+        $data = Siswa::with('akademikAktif.rombel', 'akademikAktif.rayon', 'orangTua', 'user')
+            ->leftJoin('siswa_akademik as akademik_aktif', function ($join) {
+                $join->on('akademik_aktif.siswa_id', '=', 'siswa.id')
+                    ->where('akademik_aktif.status', 'aktif');
+            })
+            ->leftJoin('rayon', 'rayon.id', '=', 'akademik_aktif.rayon_id')
+            ->leftJoin('rombel', 'rombel.id', '=', 'akademik_aktif.rombel_id')
+            ->select('siswa.*')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('siswa.nis', 'like', '%'.$search.'%')
+                        ->orWhere('siswa.nama', 'like', '%'.$search.'%')
+                        ->orWhere('rayon.nama', 'like', '%'.$search.'%')
+                        ->orWhere('rombel.nama', 'like', '%'.$search.'%');
+                });
+            })
+            ->orderBy('rayon.nama')
+            ->orderBy('siswa.nis')
+            ->paginate(100)
+            ->withQueryString();
+
+        return view('admin.siswa.index', compact('data', 'search'));
     }
 
     public function create()

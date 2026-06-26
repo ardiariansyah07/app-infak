@@ -10,12 +10,29 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $data = User::latest()->get();
+        $search = $request->string('q')->toString();
         $roles = $this->roles();
 
-        return view('admin.user.index', compact('data', 'roles'));
+        $data = User::orderBy('role')
+            ->when($search !== '', function ($query) use ($search, $roles) {
+                $matchingRoles = collect($roles)
+                    ->filter(fn ($label, $value) => str_contains(strtolower($label), strtolower($search)) || str_contains(strtolower($value), strtolower($search)))
+                    ->keys()
+                    ->values();
+
+                $query->where(function ($query) use ($search, $matchingRoles) {
+                    $query->where('name', 'like', '%'.$search.'%')
+                        ->orWhere('email', 'like', '%'.$search.'%')
+                        ->when($matchingRoles->isNotEmpty(), fn ($query) => $query->orWhereIn('role', $matchingRoles));
+                });
+            })
+            ->orderBy('name')
+            ->paginate(100)
+            ->withQueryString();
+
+        return view('admin.user.index', compact('data', 'roles', 'search'));
     }
 
     public function create()

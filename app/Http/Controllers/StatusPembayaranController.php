@@ -15,15 +15,23 @@ class StatusPembayaranController extends Controller
 
         $data = Siswa::with('akademikAktif.rombel', 'akademikAktif.rayon')
             ->with(['akademik.tagihanInfak' => fn ($query) => $query->orderBy('periode')])
-            ->where('status', 'aktif')
+            ->leftJoin('siswa_akademik as akademik_aktif', function ($join) {
+                $join->on('akademik_aktif.siswa_id', '=', 'siswa.id')
+                    ->where('akademik_aktif.status', 'aktif');
+            })
+            ->leftJoin('rayon', 'rayon.id', '=', 'akademik_aktif.rayon_id')
+            ->select('siswa.*')
+            ->where('siswa.status', 'aktif')
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
-                    $query->where('nis', 'like', '%'.$search.'%')
-                        ->orWhere('nama', 'like', '%'.$search.'%');
+                    $query->where('siswa.nis', 'like', '%'.$search.'%')
+                        ->orWhere('siswa.nama', 'like', '%'.$search.'%');
                 });
             })
-            ->orderBy('nis')
-            ->get();
+            ->orderBy('rayon.nama')
+            ->orderBy('siswa.nis')
+            ->paginate(100)
+            ->withQueryString();
 
         return view('pembayaran.status.index', [
             'data' => $data,

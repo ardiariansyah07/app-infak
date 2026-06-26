@@ -32,6 +32,7 @@ use App\Http\Controllers\StatusPembayaranController;
 use App\Http\Controllers\Petugas\DashboardController as PetugasDashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Rayon\DashboardController as RayonDashboardController;
+use App\Http\Controllers\Rayon\PembayaranController as RayonPembayaranController;
 use App\Http\Controllers\Rayon\SiswaController as RayonSiswaController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -213,6 +214,12 @@ Route::prefix('rayon')
 
         Route::get('/siswa', [RayonSiswaController::class, 'index'])
             ->name('siswa.index');
+
+        Route::get('/siswa/{siswa}', [RayonSiswaController::class, 'show'])
+            ->name('siswa.show');
+
+        Route::resource('pembayaran', RayonPembayaranController::class)
+            ->only(['index', 'create', 'store']);
 
     });
 

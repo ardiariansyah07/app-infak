@@ -11,10 +11,10 @@
     <div class="card-body">
         <div class="mb-3">
             <label class="form-label">Siswa</label>
-            <select name="siswa_akademik_id" class="form-select" required>
+            <select name="siswa_akademik_id" class="form-select" data-searchable-select data-placeholder="Pilih data..." required>
                 @foreach($siswaAkademik as $item)
                     <option value="{{ $item->id }}" @selected(old('siswa_akademik_id', $komitmen->siswa_akademik_id) == $item->id)>
-                        {{ $item->siswa?->nama }} - {{ $item->rombel?->nama }} - {{ $item->rayon?->nama }}
+                        {{ $item->siswa?->nama }} ({{ $item->siswa?->nis }}) - {{ $item->rayon?->nama }} - {{ $item->rombel?->nama }} - {{ $item->tahunAjaran?->nama }}
                     </option>
                 @endforeach
             </select>

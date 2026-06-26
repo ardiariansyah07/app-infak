@@ -35,11 +35,6 @@ class PembayaranController extends Controller
 
         return view('ortu.pembayaran.form', [
             'siswa' => Siswa::whereIn('id', $siswaIds)->orderBy('nama')->get(),
-            'tagihan' => TagihanInfak::with('siswaAkademik.siswa')
-                ->whereHas('siswaAkademik', fn ($query) => $query->whereIn('siswa_id', $siswaIds))
-                ->whereIn('status', ['belum', 'sebagian'])
-                ->orderBy('periode')
-                ->get(),
         ]);
     }
 

@@ -3,8 +3,6 @@
 @section('title','Komitmen Infak')
 
 @section('content')
-@php use App\Support\Periode; @endphp
-
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2 class="fw-bold mb-1">Komitmen Infak</h2>
@@ -24,16 +22,16 @@
 <div class="card border-0 shadow-sm">
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
-            <thead class="table-light"><tr><th>Siswa</th><th>Rombel</th><th>Rayon</th><th>Nominal</th><th>Bulan Lunas</th><th>Bulan Belum</th><th width="160">Aksi</th></tr></thead>
+            <thead class="table-light"><tr><th>Siswa</th><th>Tahun Ajaran</th><th>Rombel</th><th>Rayon</th><th>Nominal</th><th>Mulai Bulan</th><th width="160">Aksi</th></tr></thead>
             <tbody>
             @forelse($data as $komitmen)
                 <tr>
                     <td>{{ $komitmen->siswaAkademik?->siswa?->nama }}</td>
+                    <td>{{ $komitmen->siswaAkademik?->tahunAjaran?->nama }}</td>
                     <td>{{ $komitmen->siswaAkademik?->rombel?->nama }}</td>
                     <td>{{ $komitmen->siswaAkademik?->rayon?->nama }}</td>
                     <td>Rp {{ number_format($komitmen->nominal_bulanan, 0, ',', '.') }}</td>
-                    <td class="small">{{ Periode::labels($komitmen->siswaAkademik?->tagihanInfak?->where('status', 'lunas') ?? []) ?: '-' }}</td>
-                    <td class="small">{{ Periode::labels($komitmen->siswaAkademik?->tagihanInfak?->whereIn('status', ['belum', 'sebagian']) ?? []) ?: '-' }}</td>
+                    <td>{{ optional($komitmen->mulai_bulan)->format('Y-m') ?: '-' }}</td>
                     <td>
                         <a href="{{ route((isset($prefix) ? $prefix : str(request()->route()?->getName() ?? 'admin.')->before('.')->toString()) . '.komitmen-infak.edit', $komitmen) }}" class="btn btn-sm btn-warning"><i class="bi bi-pencil-square"></i> Edit</a>
                         <form action="{{ route((isset($prefix) ? $prefix : str(request()->route()?->getName() ?? 'admin.')->before('.')->toString()) . '.komitmen-infak.destroy', $komitmen) }}" method="POST" class="d-inline delete-form">
@@ -47,6 +45,9 @@
             @endforelse
             </tbody>
         </table>
+    </div>
+    <div class="card-body">
+        {{ $data->links() }}
     </div>
 </div>
 @endsection

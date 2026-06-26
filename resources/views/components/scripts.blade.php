@@ -167,14 +167,14 @@ document.querySelectorAll('[data-password-checklist]').forEach(checklist => {
 <script>
 
 document
-.querySelectorAll('[data-select-filter]')
-.forEach(input => {
+.querySelectorAll('select[data-searchable-select]')
+.forEach(select => {
 
-    const select = document.getElementById(input.dataset.selectFilter);
-
-    if(!select){
+    if(select.dataset.searchableReady === '1'){
         return;
     }
+
+    select.dataset.searchableReady = '1';
 
     const options =
         Array.from(select.options).map(option => ({
@@ -182,31 +182,152 @@ document
             text: option.text,
         }));
 
-    input.addEventListener('input', () => {
+    const wrapper =
+        document.createElement('div');
 
-        const keyword =
-            input.value.toLowerCase().trim();
+    wrapper.className = 'searchable-select';
+
+    const toggle =
+        document.createElement('button');
+
+    toggle.type = 'button';
+    toggle.className = 'searchable-select-toggle';
+
+    const label =
+        document.createElement('span');
+
+    label.className = 'searchable-select-label';
+
+    const icon =
+        document.createElement('i');
+
+    icon.className = 'bi bi-caret-down-fill small text-muted';
+
+    toggle.append(label, icon);
+
+    const menu =
+        document.createElement('div');
+
+    menu.className = 'searchable-select-menu';
+
+    const search =
+        document.createElement('input');
+
+    search.type = 'search';
+    search.className = 'form-control searchable-select-search';
+    search.autocomplete = 'off';
+
+    const list =
+        document.createElement('div');
+
+    list.className = 'searchable-select-options';
+
+    menu.append(search, list);
+
+    select.parentNode.insertBefore(wrapper, select);
+    wrapper.append(select, toggle, menu);
+    select.classList.add('searchable-select-native');
+
+    const selectedText = () => {
+        const selected =
+            select.options[select.selectedIndex];
+
+        return selected?.text || select.dataset.placeholder || 'Pilih data...';
+    };
+
+    const updateLabel = () => {
+        label.textContent = selectedText();
+        label.classList.toggle('searchable-select-placeholder', ! select.value);
+    };
+
+    const close = () => {
+        wrapper.classList.remove('open');
+    };
+
+    const render = (keyword = '') => {
+        const normalized =
+            keyword.toLowerCase().trim();
 
         const selectedValue =
             select.value;
 
-        select.innerHTML = '';
+        list.innerHTML = '';
 
-        options
-            .filter(option => option.text.toLowerCase().includes(keyword))
-            .forEach(option => {
-                const element =
-                    new Option(option.text, option.value);
+        const filtered =
+            options.filter(option => option.text.toLowerCase().includes(normalized));
 
-                select.add(element);
-            });
+        if(filtered.length === 0){
+            const empty =
+                document.createElement('div');
 
-        if(Array.from(select.options).some(option => option.value === selectedValue)){
-            select.value = selectedValue;
+            empty.className = 'searchable-select-empty';
+            empty.textContent = 'Data tidak ditemukan';
+            list.append(empty);
+
+            return;
         }
 
+        filtered.forEach(option => {
+            const item =
+                document.createElement('button');
+
+            item.type = 'button';
+            item.className = 'searchable-select-option';
+            item.textContent = option.text;
+            item.dataset.value = option.value;
+            item.classList.toggle('active', option.value === selectedValue);
+
+            item.addEventListener('click', () => {
+                select.value = option.value;
+                select.dispatchEvent(new Event('change', {bubbles:true}));
+                updateLabel();
+                close();
+            });
+
+            list.append(item);
+        });
+    };
+
+    toggle.addEventListener('click', () => {
+        const willOpen =
+            ! wrapper.classList.contains('open');
+
+        document
+            .querySelectorAll('.searchable-select.open')
+            .forEach(item => item.classList.remove('open'));
+
+        wrapper.classList.toggle('open', willOpen);
+
+        if(willOpen){
+            search.value = '';
+            render();
+            requestAnimationFrame(() => search.focus());
+        }
     });
 
+    search.addEventListener('input', () => {
+        render(search.value);
+    });
+
+    search.addEventListener('keydown', event => {
+        if(event.key === 'Escape'){
+            close();
+            toggle.focus();
+        }
+    });
+
+    updateLabel();
+    render();
+});
+
+document.addEventListener('click', event => {
+    if(event.target.closest('.searchable-select')){
+        return;
+    }
+
+    document
+        .querySelectorAll('.searchable-select.open')
+        .forEach(item => item.classList.remove('open'));
 });
 
 </script>
@@ -388,6 +509,13 @@ document.addEventListener('DOMContentLoaded', () => {
         .forEach((table, tableIndex) => {
 
             if(table.dataset.enhancedTable === 'false' || table.dataset.tableEnhanced === 'true'){
+                return;
+            }
+
+            const card =
+                table.closest('.card');
+
+            if(card?.querySelector('.pagination')){
                 return;
             }
 

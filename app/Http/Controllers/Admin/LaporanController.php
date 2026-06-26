@@ -10,6 +10,7 @@ use App\Models\TagihanInfak;
 use App\Support\SimplePdf;
 use App\Support\Periode;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
 class LaporanController extends Controller
@@ -25,12 +26,13 @@ class LaporanController extends Controller
     {
         $data = $this->reportData($request);
         $jenis = $request->string('jenis', 'ringkasan')->toString();
-        abort_unless(in_array($jenis, ['ringkasan', 'rayon', 'tunggakan'], true), 404);
+        abort_unless(in_array($jenis, ['ringkasan', 'rayon', 'tunggakan', 'tunggakan-rayon'], true), 404);
 
         $titles = [
             'ringkasan' => 'Laporan Ringkasan Infak Sekolah',
             'rayon' => 'Laporan Rekap Infak Per Rayon',
             'tunggakan' => 'Laporan Tagihan Belum Lunas',
+            'tunggakan-rayon' => 'Laporan Tunggakan Siswa Per Rayon',
         ];
 
         $pdf = new SimplePdf($titles[$jenis]);
@@ -82,6 +84,22 @@ class LaporanController extends Controller
                     $this->rupiah($tagihan->nominal),
                     $tagihan->status,
                 ], [80, 120, 75, 85, 85, 65]);
+            }
+        }
+
+        if ($jenis === 'tunggakan-rayon') {
+            $pdf->subheading('Tunggakan Siswa Per Rayon');
+            $pdf->tableRow(['Rayon', 'NIS', 'Siswa', 'Rombel', 'Sudah', 'Belum', 'Nominal'], [70, 65, 130, 65, 45, 45, 85], true);
+            foreach ($data['tunggakanPerRayon'] as $siswa) {
+                $pdf->tableRow([
+                    $siswa->rayon_nama,
+                    $siswa->nis,
+                    $siswa->nama,
+                    $siswa->rombel_nama,
+                    $siswa->bulan_lunas,
+                    $siswa->bulan_belum,
+                    $this->rupiah($siswa->nominal_tunggakan),
+                ], [70, 65, 130, 65, 45, 45, 85]);
             }
         }
 
@@ -155,6 +173,36 @@ class LaporanController extends Controller
             ->limit(25)
             ->get();
 
+        $tunggakanPerRayon = DB::table('siswa_akademik as aktif')
+            ->join('siswa', 'siswa.id', '=', 'aktif.siswa_id')
+            ->leftJoin('rombel', 'rombel.id', '=', 'aktif.rombel_id')
+            ->leftJoin('rayon', 'rayon.id', '=', 'aktif.rayon_id')
+            ->leftJoin('siswa_akademik as semua_akademik', 'semua_akademik.siswa_id', '=', 'siswa.id')
+            ->leftJoin('tagihan_infak', function ($join) use ($periode) {
+                $join->on('tagihan_infak.siswa_akademik_id', '=', 'semua_akademik.id');
+
+                if ($periode !== '') {
+                    $join->where('tagihan_infak.periode', $periode);
+                }
+            })
+            ->where('aktif.status', 'aktif')
+            ->where('siswa.status', 'aktif')
+            ->groupBy('rayon.id', 'rayon.nama', 'rombel.nama', 'siswa.id', 'siswa.nis', 'siswa.nama')
+            ->havingRaw("SUM(CASE WHEN tagihan_infak.status IN ('belum', 'sebagian') THEN 1 ELSE 0 END) > 0")
+            ->orderBy('rayon.nama')
+            ->orderBy('siswa.nis')
+            ->selectRaw("
+                COALESCE(rayon.nama, '-') as rayon_nama,
+                siswa.nis,
+                siswa.nama,
+                COALESCE(rombel.nama, '-') as rombel_nama,
+                SUM(CASE WHEN tagihan_infak.status = 'lunas' THEN 1 ELSE 0 END) as bulan_lunas,
+                SUM(CASE WHEN tagihan_infak.status IN ('belum', 'sebagian') THEN 1 ELSE 0 END) as bulan_belum,
+                SUM(CASE WHEN tagihan_infak.status IN ('belum', 'sebagian') THEN tagihan_infak.nominal ELSE 0 END) as nominal_tunggakan
+            ")
+            ->get();
+        $totalTunggakanPerRayon = $tunggakanPerRayon->sum('nominal_tunggakan');
+
         return compact(
             'periode',
             'totalTagihan',
@@ -164,6 +212,8 @@ class LaporanController extends Controller
             'statusTagihan',
             'rekapRayon',
             'siswaMenunggak',
+            'tunggakanPerRayon',
+            'totalTunggakanPerRayon',
         );
     }
 

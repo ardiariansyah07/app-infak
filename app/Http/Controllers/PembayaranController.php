@@ -16,7 +16,7 @@ class PembayaranController extends Controller
     {
         $data = Pembayaran::with('siswa.akademikAktif.rombel', 'siswa.akademikAktif.rayon', 'tagihanInfak')
             ->latest()
-            ->get();
+            ->paginate(100);
 
         return view('pembayaran.index', [
             'data' => $data,
@@ -27,10 +27,16 @@ class PembayaranController extends Controller
     public function create(Request $request)
     {
         return view('pembayaran.form', [
-            'siswa' => Siswa::with('akademikAktif')->where('status', 'aktif')->orderBy('nis')->get(),
-            'tagihan' => TagihanInfak::with('siswaAkademik.siswa')
-                ->whereIn('status', ['belum', 'sebagian'])
-                ->orderBy('periode')
+            'siswa' => Siswa::with('akademikAktif.rombel', 'akademikAktif.rayon')
+                ->leftJoin('siswa_akademik as akademik_aktif', function ($join) {
+                    $join->on('akademik_aktif.siswa_id', '=', 'siswa.id')
+                        ->where('akademik_aktif.status', 'aktif');
+                })
+                ->leftJoin('rayon', 'rayon.id', '=', 'akademik_aktif.rayon_id')
+                ->select('siswa.*')
+                ->where('siswa.status', 'aktif')
+                ->orderBy('rayon.nama')
+                ->orderBy('siswa.nis')
                 ->get(),
             'prefix' => $this->prefix($request),
         ]);

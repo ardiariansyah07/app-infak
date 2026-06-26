@@ -36,5 +36,8 @@
             </tbody>
         </table>
     </div>
+    <div class="card-body">
+        {{ $data->links() }}
+    </div>
 </div>
 @endsection

@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('title','Tambah Pembayaran')
+@section('title','Lapor Pembayaran Rayon')
 
 @section('content')
-<h2 class="fw-bold mb-4">Tambah Pembayaran</h2>
+<h2 class="fw-bold mb-4">Lapor Pembayaran Rayon</h2>
 
-<form action="{{ route($prefix . '.pembayaran.store') }}" method="POST" class="card border-0 shadow-sm">
+<form action="{{ route('rayon.pembayaran.store') }}" method="POST" enctype="multipart/form-data" class="card border-0 shadow-sm">
     @csrf
     <div class="card-body">
         <div class="row g-3">
@@ -18,7 +18,7 @@
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label">Tanggal</label>
+                <label class="form-label">Tanggal Bayar</label>
                 <input name="tanggal" type="date" class="form-control" value="{{ date('Y-m-d') }}" required>
             </div>
             <div class="col-md-3">
@@ -27,12 +27,17 @@
             </div>
             <div class="col-md-12">
                 <div class="alert alert-info mb-0">
-                    Alokasi tagihan otomatis dari periode tertua siswa yang dipilih. Pembayaran sebagian akan tercatat sebagai sisa tagihan.
+                    Bulan yang dibayar ditentukan otomatis dari tagihan tertua. Laporan ini tetap menunggu validasi admin atau petugas infak.
                 </div>
             </div>
+            <div class="col-md-12">
+                <label class="form-label">Bukti Bayar</label>
+                <input name="bukti_transfer" type="file" class="form-control" accept=".jpg,.jpeg,.png,.pdf" required>
+                <div class="form-text">Format JPG, PNG, atau PDF. Maksimal 2 MB.</div>
+            </div>
         </div>
-        <button class="btn btn-primary mt-4">Simpan</button>
-        <a href="{{ route($prefix . '.pembayaran.index') }}" class="btn btn-light mt-4">Batal</a>
+        <button class="btn btn-primary mt-4">Kirim Laporan</button>
+        <a href="{{ route('rayon.pembayaran.index') }}" class="btn btn-light mt-4">Batal</a>
     </div>
 </form>
 @endsection

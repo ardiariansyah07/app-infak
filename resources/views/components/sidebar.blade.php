@@ -29,7 +29,7 @@
         </div>
     </div>
 
-    <div class="sidebar-menu mt-3">
+    <div class="sidebar-menu mt-2">
         <a href="{{ route($dashboardRoute) }}" class="{{ request()->routeIs($dashboardRoute) ? 'active' : '' }}">
             <i class="bi bi-speedometer2"></i>
             <span class="menu-text">Dashboard</span>
@@ -136,6 +136,9 @@
         <div class="sidebar-menu">
             <a href="{{ route('rayon.siswa.index') }}" class="{{ request()->is('rayon/siswa*') ? 'active' : '' }}">
                 <i class="bi bi-people"></i><span class="menu-text">Siswa Rayon</span>
+            </a>
+            <a href="{{ route('rayon.pembayaran.index') }}" class="{{ request()->is('rayon/pembayaran*') ? 'active' : '' }}">
+                <i class="bi bi-credit-card"></i><span class="menu-text">Pembayaran</span>
             </a>
         </div>
     @endif

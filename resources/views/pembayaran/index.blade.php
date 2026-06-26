@@ -30,7 +30,7 @@
                     <td><span class="badge bg-{{ $pembayaran->status_verifikasi === 'valid' ? 'success' : ($pembayaran->status_verifikasi === 'ditolak' ? 'danger' : 'warning') }}">{{ $pembayaran->status_verifikasi }}</span></td>
                     <td>
                         @if($pembayaran->bukti_transfer)
-                            <a href="{{ asset('storage/' . $pembayaran->bukti_transfer) }}" target="_blank">Lihat</a>
+                            <a href="{{ asset('storage/' . $pembayaran->bukti_transfer) }}" target="_blank" rel="noopener noreferrer">Lihat</a>
                         @else
                             -
                         @endif
@@ -57,6 +57,9 @@
             @endforelse
             </tbody>
         </table>
+    </div>
+    <div class="card-body">
+        {{ $data->links() }}
     </div>
 </div>
 @endsection

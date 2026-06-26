@@ -17,6 +17,19 @@
     </div>
 </div>
 
+<form method="GET" class="card border-0 shadow-sm mb-4">
+    <div class="card-body row g-2 align-items-end">
+        <div class="col-md-8">
+            <label class="form-label">Cari Siswa</label>
+            <input name="q" class="form-control" value="{{ $search }}" placeholder="NIS, nama, rayon, atau rombel">
+        </div>
+        <div class="col-md-4 d-flex gap-2">
+            <button class="btn btn-outline-primary"><i class="bi bi-search"></i> Filter</button>
+            <a href="{{ route('admin.siswa.index') }}" class="btn btn-light">Reset</a>
+        </div>
+    </div>
+</form>
+
 <div class="card border-0 shadow-sm">
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
@@ -45,6 +58,9 @@
             @endforelse
             </tbody>
         </table>
+    </div>
+    <div class="card-body">
+        {{ $data->links() }}
     </div>
 </div>
 @endsection

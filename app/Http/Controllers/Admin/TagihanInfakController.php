@@ -10,13 +10,25 @@ use Illuminate\Http\Request;
 
 class TagihanInfakController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $data = TagihanInfak::with('siswaAkademik.siswa', 'siswaAkademik.rombel', 'siswaAkademik.rayon')
-            ->latest()
-            ->get();
+        $search = $request->string('q')->toString();
+        $status = $request->string('status')->toString();
 
-        return view('admin.tagihan.index', compact('data'));
+        $data = TagihanInfak::with('siswaAkademik.siswa', 'siswaAkademik.rombel', 'siswaAkademik.rayon', 'siswaAkademik.tahunAjaran')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->whereHas('siswaAkademik.siswa', function ($query) use ($search) {
+                    $query->where('nis', 'like', '%'.$search.'%')
+                        ->orWhere('nama', 'like', '%'.$search.'%');
+                });
+            })
+            ->when(in_array($status, ['belum', 'sebagian', 'lunas'], true), fn ($query) => $query->where('status', $status))
+            ->orderByDesc('periode')
+            ->orderByDesc('id')
+            ->paginate(100)
+            ->withQueryString();
+
+        return view('admin.tagihan.index', compact('data', 'search', 'status'));
     }
 
     public function create()
@@ -94,9 +106,14 @@ class TagihanInfakController extends Controller
 
     private function siswaAkademikOptions()
     {
-        return SiswaAkademik::with('siswa', 'rombel', 'rayon')
-            ->where('status', 'aktif')
+        return SiswaAkademik::with('siswa', 'rombel', 'rayon', 'tahunAjaran')
+            ->where('siswa_akademik.status', 'aktif')
+            ->join('siswa', 'siswa.id', '=', 'siswa_akademik.siswa_id')
+            ->join('rayon', 'rayon.id', '=', 'siswa_akademik.rayon_id')
+            ->select('siswa_akademik.*')
+            ->orderBy('rayon.nama')
+            ->orderBy('siswa.nis')
             ->get()
-            ->sortBy('siswa.nama');
+            ->values();
     }
 }

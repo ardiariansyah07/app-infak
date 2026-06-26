@@ -21,6 +21,10 @@
             <i class="bi bi-filetype-pdf"></i>
             PDF Tunggakan
         </a>
+        <a href="{{ route('admin.laporan.pdf', ['periode' => $periode, 'jenis' => 'tunggakan-rayon']) }}" class="btn btn-outline-primary">
+            <i class="bi bi-filetype-pdf"></i>
+            PDF Tunggakan Rayon
+        </a>
         <button class="btn btn-outline-secondary" onclick="window.print()">
             <i class="bi bi-printer"></i>
             Cetak
@@ -141,6 +145,51 @@
                     </table>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+            <div>
+                <h5 class="fw-bold mb-1">Tunggakan Siswa Per Rayon</h5>
+                <p class="text-muted mb-0">Satu siswa tampil satu kali dengan total bulan sudah bayar dan belum bayar.</p>
+            </div>
+            <div class="text-end">
+                <small class="text-muted d-block">Total Tunggakan Keseluruhan</small>
+                <strong class="fs-5">Rp {{ number_format($totalTunggakanPerRayon, 0, ',', '.') }}</strong>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Rayon</th>
+                        <th>NIS</th>
+                        <th>Siswa</th>
+                        <th>Rombel</th>
+                        <th>Sudah Bayar</th>
+                        <th>Belum Bayar</th>
+                        <th>Nominal Tunggakan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @forelse($tunggakanPerRayon as $siswa)
+                    <tr>
+                        <td>{{ $siswa->rayon_nama }}</td>
+                        <td>{{ $siswa->nis }}</td>
+                        <td>{{ $siswa->nama }}</td>
+                        <td>{{ $siswa->rombel_nama }}</td>
+                        <td><span class="badge bg-success">{{ $siswa->bulan_lunas }} bulan</span></td>
+                        <td><span class="badge bg-warning text-dark">{{ $siswa->bulan_belum }} bulan</span></td>
+                        <td>Rp {{ number_format($siswa->nominal_tunggakan, 0, ',', '.') }}</td>
+                    </tr>
+                @empty
+                    <tr><td colspan="7" class="text-center text-muted py-4">Tidak ada siswa yang memiliki tunggakan.</td></tr>
+                @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

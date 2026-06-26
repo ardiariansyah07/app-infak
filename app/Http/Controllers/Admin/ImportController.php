@@ -12,7 +12,6 @@ use App\Models\Siswa;
 use App\Models\TagihanInfak;
 use App\Models\TahunAjaran;
 use App\Models\User;
-use App\Support\InfakStatus;
 use App\Support\AkademikStatus;
 use App\Support\SimpleXlsx;
 use Carbon\CarbonImmutable;
@@ -89,7 +88,7 @@ class ImportController extends Controller
         @ini_set('memory_limit', '512M');
 
         $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx', 'max:10240'],
+            'file' => ['required', 'file', 'mimes:xlsx', 'max:51200'],
         ]);
 
         try {
@@ -322,69 +321,43 @@ class ImportController extends Controller
     private function tagihanAwal(array $rows): int
     {
         $count = 0;
+        $this->ensureAkademikForImportRows($rows, 0, 1);
+        $akademikMap = $this->akademikImportMap($rows, 0, 1);
 
-        foreach ($rows as $row) {
-            $siswa = Siswa::where('nis', $row[0] ?? null)->first();
-            $tahun = TahunAjaran::where('nama', $row[1] ?? null)->first();
-            $periode = $this->monthValue($row[2] ?? null);
-            $nominalTagihan = $this->moneyValue($row[3] ?? 0);
-            $nominalTerbayar = $this->moneyValue($row[4] ?? 0);
+        foreach (array_chunk($rows, 300) as $chunk) {
+            $plans = [];
 
-            if (! $siswa || ! $tahun || ! preg_match('/^\d{4}-\d{2}$/', (string) $periode) || $nominalTagihan <= 0) {
+            foreach ($chunk as $row) {
+                $akademik = $akademikMap->get($this->akademikImportKey($row[0] ?? null, $row[1] ?? null));
+                $periode = $this->monthValue($row[2] ?? null);
+                $nominalTagihan = $this->moneyValue($row[3] ?? 0);
+                $nominalTerbayar = min($nominalTagihan, $this->moneyValue($row[4] ?? 0));
+
+                if (! $akademik || ! preg_match('/^\d{4}-\d{2}$/', (string) $periode) || $nominalTagihan <= 0) {
+                    continue;
+                }
+
+                $plans[] = [
+                    'akademik_id' => (int) $akademik->akademik_id,
+                    'siswa_id' => (int) $akademik->siswa_id,
+                    'periode' => $periode,
+                    'nominal_tagihan' => $nominalTagihan,
+                    'nominal_terbayar' => $nominalTerbayar,
+                    'tanggal' => $this->dateValue($row[5] ?? null) ?: $periode.'-01',
+                ];
+            }
+
+            if ($plans === []) {
                 continue;
             }
 
-            $akademik = $siswa->akademik()
-                ->where('tahun_ajaran_id', $tahun->id)
-                ->first();
-
-            if (! $akademik) {
-                continue;
-            }
-
-            DB::transaction(function () use ($row, $siswa, $akademik, $periode, $nominalTagihan, $nominalTerbayar) {
-                $tagihan = TagihanInfak::updateOrCreate(
-                    [
-                        'siswa_akademik_id' => $akademik->id,
-                        'periode' => $periode,
-                    ],
-                    [
-                        'nominal' => $nominalTagihan,
-                        'status' => 'belum',
-                    ]
-                );
-
-                $existingImportPaymentIds = $tagihan->alokasiPembayaran()
-                    ->whereHas('pembayaran', fn ($query) => $query->where('bukti_transfer', 'import-tagihan-awal'))
-                    ->pluck('pembayaran_id');
-
-                if ($existingImportPaymentIds->isNotEmpty()) {
-                    $tagihan->alokasiPembayaran()
-                        ->whereIn('pembayaran_id', $existingImportPaymentIds)
-                        ->delete();
-
-                    Pembayaran::whereIn('id', $existingImportPaymentIds)->delete();
-                }
-
-                if ($nominalTerbayar > 0) {
-                    $pembayaran = Pembayaran::create([
-                        'siswa_id' => $siswa->id,
-                        'tanggal' => $this->dateValue($row[5] ?? null) ?: $periode.'-01',
-                        'nominal' => min($nominalTerbayar, $nominalTagihan),
-                        'bukti_transfer' => 'import-tagihan-awal',
-                        'status_verifikasi' => 'valid',
-                    ]);
-
-                    $pembayaran->alokasiPembayaran()->create([
-                        'tagihan_infak_id' => $tagihan->id,
-                        'nominal' => min($nominalTerbayar, $nominalTagihan),
-                    ]);
-                }
-
-                InfakStatus::refreshTagihan($tagihan);
+            DB::transaction(function () use ($plans) {
+                $tagihanIds = $this->storeTagihanPlans($plans);
+                $this->replaceImportPayments($plans, $tagihanIds, 'import-tagihan-awal');
+                $this->refreshTagihanStatuses($tagihanIds->values()->all());
             });
 
-            $count++;
+            $count += count($plans);
         }
 
         return $count;
@@ -393,117 +366,470 @@ class ImportController extends Controller
     private function saldoAwal(array $rows): int
     {
         $count = 0;
+        $this->ensureAkademikForImportRows($rows, 0, 1);
+        $akademikMap = $this->akademikImportMap($rows, 0, 1);
 
-        foreach ($rows as $row) {
-            $siswa = Siswa::where('nis', $row[0] ?? null)->first();
-            $tahun = TahunAjaran::where('nama', $row[1] ?? null)->first();
-            $mulaiBulan = $this->monthStart($row[2] ?? null);
-            $nominalBulanan = $this->moneyValue($row[3] ?? 0);
-            $bulanLunas = max(0, (int) ($row[4] ?? 0));
-            $bulanSebagian = max(0, (int) ($row[5] ?? 0));
-            $nominalSebagian = min($nominalBulanan, $this->moneyValue($row[6] ?? 0));
-            $bulanBelum = max(0, (int) ($row[7] ?? 0));
+        foreach (array_chunk($rows, 500) as $chunk) {
+            $plans = [];
+            $komitmen = [];
 
-            if (! $siswa || ! $tahun || ! $mulaiBulan || $nominalBulanan <= 0) {
-                continue;
-            }
+            foreach ($chunk as $row) {
+                $akademik = $akademikMap->get($this->akademikImportKey($row[0] ?? null, $row[1] ?? null));
+                $mulaiBulan = $this->monthStart($row[2] ?? null);
+                $nominalBulanan = $this->moneyValue($row[3] ?? 0);
+                $bulanLunas = max(0, (int) ($row[4] ?? 0));
+                $bulanSebagian = max(0, (int) ($row[5] ?? 0));
+                $nominalSebagian = min($nominalBulanan, $this->moneyValue($row[6] ?? 0));
+                $bulanBelum = max(0, (int) ($row[7] ?? 0));
+                $totalBulan = $bulanLunas + $bulanSebagian + $bulanBelum;
 
-            $akademik = $siswa->akademik()
-                ->where('tahun_ajaran_id', $tahun->id)
-                ->first();
-
-            if (! $akademik) {
-                continue;
-            }
-
-            $totalBulan = $bulanLunas + $bulanSebagian + $bulanBelum;
-
-            if ($totalBulan <= 0) {
-                continue;
-            }
-
-            DB::transaction(function () use ($row, $siswa, $akademik, $mulaiBulan, $nominalBulanan, $bulanLunas, $bulanSebagian, $nominalSebagian, $totalBulan) {
-                $tagihanList = collect();
+                if (! $akademik || ! $mulaiBulan || $nominalBulanan <= 0 || $totalBulan <= 0) {
+                    continue;
+                }
 
                 for ($index = 0; $index < $totalBulan; $index++) {
-                    $periode = $mulaiBulan->addMonthsNoOverflow($index)->format('Y-m');
-
-                    $tagihanList->push(TagihanInfak::updateOrCreate(
-                        [
-                            'siswa_akademik_id' => $akademik->id,
-                            'periode' => $periode,
-                        ],
-                        [
-                            'nominal' => $nominalBulanan,
-                            'status' => 'belum',
-                        ]
-                    ));
-                }
-
-                $existingImportPaymentIds = $tagihanList
-                    ->flatMap(fn (TagihanInfak $tagihan) => $tagihan->alokasiPembayaran()
-                        ->whereHas('pembayaran', fn ($query) => $query->where('bukti_transfer', 'import-saldo-awal'))
-                        ->pluck('pembayaran_id'))
-                    ->unique()
-                    ->values();
-
-                if ($existingImportPaymentIds->isNotEmpty()) {
-                    DB::table('alokasi_pembayaran')
-                        ->whereIn('pembayaran_id', $existingImportPaymentIds)
-                        ->delete();
-
-                    Pembayaran::whereIn('id', $existingImportPaymentIds)->delete();
-                }
-
-                $alokasi = [];
-
-                foreach ($tagihanList as $index => $tagihan) {
                     $nominalTerbayar = match (true) {
                         $index < $bulanLunas => $nominalBulanan,
                         $index < ($bulanLunas + $bulanSebagian) => $nominalSebagian,
                         default => 0,
                     };
 
-                    if ($nominalTerbayar > 0) {
-                        $alokasi[] = [
-                            'tagihan' => $tagihan,
-                            'nominal' => $nominalTerbayar,
-                        ];
-                    }
-                }
-
-                if ($alokasi !== []) {
-                    $pembayaran = Pembayaran::create([
-                        'siswa_id' => $siswa->id,
+                    $plans[] = [
+                        'akademik_id' => (int) $akademik->akademik_id,
+                        'siswa_id' => (int) $akademik->siswa_id,
+                        'periode' => $mulaiBulan->addMonthsNoOverflow($index)->format('Y-m'),
+                        'nominal_tagihan' => $nominalBulanan,
+                        'nominal_terbayar' => $nominalTerbayar,
                         'tanggal' => $this->dateValue($row[8] ?? null) ?: now()->toDateString(),
-                        'nominal' => collect($alokasi)->sum('nominal'),
-                        'bukti_transfer' => 'import-saldo-awal',
-                        'status_verifikasi' => 'valid',
-                    ]);
-
-                    foreach ($alokasi as $item) {
-                        $pembayaran->alokasiPembayaran()->create([
-                            'tagihan_infak_id' => $item['tagihan']->id,
-                            'nominal' => $item['nominal'],
-                        ]);
-                    }
+                    ];
                 }
 
-                $tagihanList->each(fn (TagihanInfak $tagihan) => InfakStatus::refreshTagihan($tagihan));
+                $komitmen[(int) $akademik->akademik_id] = [
+                    'siswa_akademik_id' => (int) $akademik->akademik_id,
+                    'nominal_bulanan' => $nominalBulanan,
+                    'mulai_bulan' => $mulaiBulan->toDateString(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
 
-                KomitmenInfak::updateOrCreate(
-                    ['siswa_akademik_id' => $akademik->id],
-                    [
-                        'nominal_bulanan' => $nominalBulanan,
-                        'mulai_bulan' => $mulaiBulan->toDateString(),
-                    ]
-                );
+            if ($plans === []) {
+                continue;
+            }
+
+            DB::transaction(function () use ($plans, $komitmen) {
+                $tagihanIds = $this->storeTagihanPlans($plans);
+                $this->replaceImportPayments($plans, $tagihanIds, 'import-saldo-awal');
+                $this->refreshTagihanStatuses($tagihanIds->values()->all());
+
+                $this->storeKomitmenRows(array_values($komitmen));
             });
 
-            $count++;
+            $count += count($komitmen);
         }
 
         return $count;
+    }
+
+    private function ensureAkademikForImportRows(array $rows, int $nisIndex, int $tahunIndex): void
+    {
+        $pairs = collect($rows)
+            ->map(fn ($row) => [
+                'nis' => trim((string) ($row[$nisIndex] ?? '')),
+                'tahun' => trim((string) ($row[$tahunIndex] ?? '')),
+            ])
+            ->filter(fn ($row) => $row['nis'] !== '' && $row['tahun'] !== '')
+            ->unique(fn ($row) => $this->akademikImportKey($row['nis'], $row['tahun']))
+            ->values();
+
+        if ($pairs->isEmpty()) {
+            return;
+        }
+
+        $siswaMap = Siswa::whereIn('nis', $pairs->pluck('nis')->unique()->values())
+            ->get()
+            ->keyBy('nis');
+        $tahunMap = TahunAjaran::whereIn('nama', $pairs->pluck('tahun')->unique()->values())
+            ->get()
+            ->keyBy('nama');
+        $existingKeys = $this->akademikImportMap($rows, $nisIndex, $tahunIndex)->keys();
+        $rombel = Rombel::orderBy('nama')->get();
+        $rombelByName = $rombel->keyBy('nama');
+        $rombelByTingkat = $rombel->whereNotNull('tingkat')->groupBy('tingkat');
+        $affectedSiswaIds = [];
+
+        $referencesBySiswa = DB::table('siswa_akademik')
+            ->join('tahun_ajaran', 'tahun_ajaran.id', '=', 'siswa_akademik.tahun_ajaran_id')
+            ->leftJoin('rombel', 'rombel.id', '=', 'siswa_akademik.rombel_id')
+            ->whereIn('siswa_akademik.siswa_id', $siswaMap->pluck('id')->values())
+            ->select(
+                'siswa_akademik.*',
+                'tahun_ajaran.nama as tahun_ajaran_nama',
+                'tahun_ajaran.tanggal_mulai',
+                'rombel.nama as rombel_nama'
+            )
+            ->get()
+            ->groupBy('siswa_id');
+
+        $akademikRows = [];
+
+        foreach ($pairs as $pair) {
+            $key = $this->akademikImportKey($pair['nis'], $pair['tahun']);
+
+            if ($existingKeys->contains($key)) {
+                continue;
+            }
+
+            $siswa = $siswaMap->get($pair['nis']);
+            $tahun = $tahunMap->get($pair['tahun']);
+
+            if (! $siswa || ! $tahun) {
+                continue;
+            }
+
+            $references = $referencesBySiswa->get($siswa->id, collect());
+
+            if ($references->isEmpty()) {
+                continue;
+            }
+
+            $targetYear = $this->tahunAjaranStartYear($tahun);
+            $reference = $references
+                ->sortBy(fn ($item) => abs($targetYear - $this->tahunAjaranStartYear($item)))
+                ->first();
+            $tingkat = $this->inferredTingkat($reference, $tahun);
+            $rombelId = $this->matchingRombelId($reference, $tingkat, $rombelByName, $rombelByTingkat);
+
+            $akademikRows[] = [
+                'siswa_id' => $siswa->id,
+                'tahun_ajaran_id' => $tahun->id,
+                'tingkat' => $tingkat,
+                'rombel_id' => $rombelId,
+                'rayon_id' => $reference->rayon_id,
+                'status' => 'naik',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+
+            $affectedSiswaIds[] = $siswa->id;
+            $existingKeys->push($key);
+        }
+
+        foreach (array_chunk($akademikRows, 1000) as $chunk) {
+            DB::table('siswa_akademik')->insert($chunk);
+        }
+
+        AkademikStatus::syncMany($affectedSiswaIds);
+    }
+
+    private function inferredTingkat(object $reference, TahunAjaran $targetTahun): string
+    {
+        $levels = ['X', 'XI', 'XII'];
+        $referenceIndex = array_search($reference->tingkat, $levels, true);
+
+        if ($referenceIndex === false) {
+            return 'X';
+        }
+
+        $delta = $this->tahunAjaranStartYear($targetTahun) - $this->tahunAjaranStartYear($reference);
+        $targetIndex = max(0, min(count($levels) - 1, $referenceIndex + $delta));
+
+        return $levels[$targetIndex];
+    }
+
+    private function matchingRombelId(object $reference, string $tingkat, $rombelByName, $rombelByTingkat): int
+    {
+        $candidateName = preg_replace('/^(XII|XI|X)\b/', $tingkat, (string) $reference->rombel_nama);
+        $matched = $candidateName ? $rombelByName->get($candidateName) : null;
+
+        if ($matched) {
+            return (int) $matched->id;
+        }
+
+        return (int) ($rombelByTingkat->get($tingkat)?->first()?->id ?? $reference->rombel_id);
+    }
+
+    private function tahunAjaranStartYear(object $tahun): int
+    {
+        $date = $tahun->tanggal_mulai ?? null;
+
+        if ($date) {
+            return (int) substr((string) $date, 0, 4);
+        }
+
+        $nama = $tahun->nama ?? $tahun->tahun_ajaran_nama ?? '';
+
+        return preg_match('/\d{4}/', (string) $nama, $match) ? (int) $match[0] : (int) now()->year;
+    }
+
+    private function akademikImportMap(array $rows, int $nisIndex, int $tahunIndex)
+    {
+        $nises = collect($rows)->pluck($nisIndex)->filter()->map(fn ($value) => (string) $value)->unique()->values();
+        $tahun = collect($rows)->pluck($tahunIndex)->filter()->map(fn ($value) => (string) $value)->unique()->values();
+
+        return DB::table('siswa')
+            ->join('siswa_akademik', 'siswa_akademik.siswa_id', '=', 'siswa.id')
+            ->join('tahun_ajaran', 'tahun_ajaran.id', '=', 'siswa_akademik.tahun_ajaran_id')
+            ->whereIn('siswa.nis', $nises)
+            ->whereIn('tahun_ajaran.nama', $tahun)
+            ->select('siswa.id as siswa_id', 'siswa.nis', 'tahun_ajaran.nama as tahun_ajaran', 'siswa_akademik.id as akademik_id')
+            ->get()
+            ->keyBy(fn ($row) => $this->akademikImportKey($row->nis, $row->tahun_ajaran));
+    }
+
+    private function akademikImportKey(mixed $nis, mixed $tahun): string
+    {
+        return trim((string) $nis).'|'.trim((string) $tahun);
+    }
+
+    private function storeTagihanPlans(array $plans)
+    {
+        $now = now();
+        $akademikIds = collect($plans)->pluck('akademik_id')->unique()->values();
+        $periodes = collect($plans)->pluck('periode')->unique()->values();
+
+        $existing = DB::table('tagihan_infak')
+            ->whereIn('siswa_akademik_id', $akademikIds)
+            ->whereIn('periode', $periodes)
+            ->get()
+            ->keyBy(fn ($row) => $row->siswa_akademik_id.'|'.$row->periode);
+
+        $tagihanIds = collect();
+        $insertRows = [];
+        $updateRows = [];
+
+        foreach ($plans as $plan) {
+            $key = $plan['akademik_id'].'|'.$plan['periode'];
+
+            if ($existing->has($key)) {
+                $tagihanIds->put($key, (int) $existing->get($key)->id);
+                $updateRows[] = [
+                    'id' => (int) $existing->get($key)->id,
+                    'nominal' => $plan['nominal_tagihan'],
+                ];
+
+                continue;
+            }
+
+            $insertRows[$key] = [
+                'siswa_akademik_id' => $plan['akademik_id'],
+                'periode' => $plan['periode'],
+                'nominal' => $plan['nominal_tagihan'],
+                'status' => 'belum',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        $this->bulkUpdateTagihanNominal($updateRows);
+
+        foreach (array_chunk(array_values($insertRows), 1000) as $rows) {
+            DB::table('tagihan_infak')->insert($rows);
+        }
+
+        DB::table('tagihan_infak')
+            ->whereIn('siswa_akademik_id', $akademikIds)
+            ->whereIn('periode', $periodes)
+            ->get()
+            ->each(fn ($row) => $tagihanIds->put($row->siswa_akademik_id.'|'.$row->periode, (int) $row->id));
+
+        return $tagihanIds;
+    }
+
+    private function storeKomitmenRows(array $rows): void
+    {
+        if ($rows === []) {
+            return;
+        }
+
+        $existing = DB::table('komitmen_infak')
+            ->whereIn('siswa_akademik_id', collect($rows)->pluck('siswa_akademik_id')->unique()->values())
+            ->get()
+            ->keyBy('siswa_akademik_id');
+        $insertRows = [];
+        $updateRows = [];
+
+        foreach ($rows as $row) {
+            $current = $existing->get($row['siswa_akademik_id']);
+
+            if ($current) {
+                $updateRows[] = [
+                    'id' => (int) $current->id,
+                    'nominal_bulanan' => $row['nominal_bulanan'],
+                    'mulai_bulan' => $row['mulai_bulan'],
+                ];
+
+                continue;
+            }
+
+            $insertRows[] = $row;
+        }
+
+        foreach (array_chunk($insertRows, 1000) as $chunk) {
+            DB::table('komitmen_infak')->insert($chunk);
+        }
+
+        foreach (array_chunk($updateRows, 500) as $chunk) {
+            $ids = collect($chunk)->pluck('id')->all();
+            $nominalCase = 'CASE id ';
+            $mulaiCase = 'CASE id ';
+            $nominalBindings = [];
+            $mulaiBindings = [];
+
+            foreach ($chunk as $row) {
+                $nominalCase .= 'WHEN ? THEN ? ';
+                $nominalBindings[] = $row['id'];
+                $nominalBindings[] = $row['nominal_bulanan'];
+                $mulaiCase .= 'WHEN ? THEN ? ';
+                $mulaiBindings[] = $row['id'];
+                $mulaiBindings[] = $row['mulai_bulan'];
+            }
+
+            $nominalCase .= 'END';
+            $mulaiCase .= 'END';
+
+            DB::update(
+                'UPDATE komitmen_infak SET nominal_bulanan = '.$nominalCase.', mulai_bulan = '.$mulaiCase.', updated_at = ? WHERE id IN ('.
+                collect($ids)->map(fn () => '?')->join(',').
+                ')',
+                array_merge($nominalBindings, $mulaiBindings, [now()], $ids)
+            );
+        }
+    }
+
+    private function bulkUpdateTagihanNominal(array $rows): void
+    {
+        foreach (array_chunk($rows, 500) as $chunk) {
+            if ($chunk === []) {
+                continue;
+            }
+
+            $case = 'CASE id ';
+            $bindings = [];
+
+            foreach ($chunk as $row) {
+                $case .= 'WHEN ? THEN ? ';
+                $bindings[] = $row['id'];
+                $bindings[] = $row['nominal'];
+            }
+
+            $case .= 'END';
+
+            DB::update(
+                'UPDATE tagihan_infak SET nominal = '.$case.', status = ?, updated_at = ? WHERE id IN ('.
+                collect($chunk)->pluck('id')->map(fn () => '?')->join(',').
+                ')',
+                array_merge($bindings, ['belum', now()], collect($chunk)->pluck('id')->all())
+            );
+        }
+    }
+
+    private function replaceImportPayments(array $plans, $tagihanIds, string $source): void
+    {
+        $ids = $tagihanIds->values()->unique()->values();
+
+        $existingImportPaymentIds = DB::table('alokasi_pembayaran')
+            ->join('pembayaran', 'pembayaran.id', '=', 'alokasi_pembayaran.pembayaran_id')
+            ->whereIn('alokasi_pembayaran.tagihan_infak_id', $ids)
+            ->where('pembayaran.bukti_transfer', $source)
+            ->pluck('pembayaran.id')
+            ->unique()
+            ->values();
+
+        if ($existingImportPaymentIds->isNotEmpty()) {
+            DB::table('alokasi_pembayaran')->whereIn('pembayaran_id', $existingImportPaymentIds)->delete();
+            Pembayaran::whereIn('id', $existingImportPaymentIds)->delete();
+        }
+
+        $paymentGroups = [];
+
+        foreach ($plans as $plan) {
+            if ($plan['nominal_terbayar'] <= 0) {
+                continue;
+            }
+
+            $key = $plan['siswa_id'].'|'.$plan['tanggal'];
+            $tagihanId = $tagihanIds->get($plan['akademik_id'].'|'.$plan['periode']);
+
+            if (! $tagihanId) {
+                continue;
+            }
+
+            $paymentGroups[$key]['siswa_id'] = $plan['siswa_id'];
+            $paymentGroups[$key]['tanggal'] = $plan['tanggal'];
+            $paymentGroups[$key]['nominal'] = ($paymentGroups[$key]['nominal'] ?? 0) + $plan['nominal_terbayar'];
+            $paymentGroups[$key]['alokasi'][] = [
+                'tagihan_infak_id' => $tagihanId,
+                'nominal' => $plan['nominal_terbayar'],
+            ];
+        }
+
+        foreach ($paymentGroups as $group) {
+            $pembayaran = Pembayaran::create([
+                'siswa_id' => $group['siswa_id'],
+                'tanggal' => $group['tanggal'],
+                'nominal' => $group['nominal'],
+                'bukti_transfer' => $source,
+                'status_verifikasi' => 'valid',
+            ]);
+
+            $now = now();
+            $alokasiRows = collect($group['alokasi'])->map(fn ($item) => [
+                'pembayaran_id' => $pembayaran->id,
+                'tagihan_infak_id' => $item['tagihan_infak_id'],
+                'nominal' => $item['nominal'],
+                'created_at' => $now,
+                'updated_at' => $now,
+            ])->all();
+
+            DB::table('alokasi_pembayaran')->insert($alokasiRows);
+        }
+    }
+
+    private function refreshTagihanStatuses(array $tagihanIds): void
+    {
+        if ($tagihanIds === []) {
+            return;
+        }
+
+        $paid = DB::table('alokasi_pembayaran')
+            ->join('pembayaran', 'pembayaran.id', '=', 'alokasi_pembayaran.pembayaran_id')
+            ->whereIn('alokasi_pembayaran.tagihan_infak_id', $tagihanIds)
+            ->where('pembayaran.status_verifikasi', 'valid')
+            ->groupBy('alokasi_pembayaran.tagihan_infak_id')
+            ->selectRaw('alokasi_pembayaran.tagihan_infak_id, SUM(alokasi_pembayaran.nominal) as total')
+            ->pluck('total', 'tagihan_infak_id');
+
+        $statusIds = [
+            'belum' => [],
+            'sebagian' => [],
+            'lunas' => [],
+        ];
+
+        DB::table('tagihan_infak')
+            ->whereIn('id', $tagihanIds)
+            ->select('id', 'nominal')
+            ->orderBy('id')
+            ->chunkById(1000, function ($tagihan) use ($paid, &$statusIds) {
+                foreach ($tagihan as $item) {
+                    $terbayar = (int) ($paid[$item->id] ?? 0);
+                    $status = match (true) {
+                        $terbayar <= 0 => 'belum',
+                        $terbayar < $item->nominal => 'sebagian',
+                        default => 'lunas',
+                    };
+
+                    $statusIds[$status][] = $item->id;
+                }
+            });
+
+        foreach ($statusIds as $status => $ids) {
+            foreach (array_chunk($ids, 1000) as $chunk) {
+                DB::table('tagihan_infak')
+                    ->whereIn('id', $chunk)
+                    ->update(['status' => $status, 'updated_at' => now()]);
+            }
+        }
     }
 
     private function moneyValue(mixed $value): int

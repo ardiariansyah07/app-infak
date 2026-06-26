@@ -11,7 +11,9 @@ class OrangTuaController extends Controller
 {
     public function index()
     {
-        $data = OrangTua::with('user', 'siswa')->latest()->get();
+        $data = OrangTua::with('user', 'siswa')
+            ->orderBy('nama')
+            ->paginate(100);
 
         return view('admin.orang_tua.index', compact('data'));
     }

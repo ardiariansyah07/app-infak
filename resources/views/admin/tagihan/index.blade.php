@@ -43,14 +43,37 @@
     Jika punya rincian per bulan, gunakan <strong>Template Per Bulan</strong>.
 </div>
 
+<form method="GET" class="card border-0 shadow-sm mb-4">
+    <div class="card-body row g-2 align-items-end">
+        <div class="col-md-5">
+            <label class="form-label">Cari Siswa/NIS</label>
+            <input name="q" class="form-control" value="{{ $search }}" placeholder="Nama atau NIS">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-select">
+                <option value="">Semua</option>
+                <option value="belum" @selected($status === 'belum')>Belum</option>
+                <option value="sebagian" @selected($status === 'sebagian')>Sebagian</option>
+                <option value="lunas" @selected($status === 'lunas')>Lunas</option>
+            </select>
+        </div>
+        <div class="col-md-4 d-flex gap-2">
+            <button class="btn btn-outline-primary"><i class="bi bi-search"></i> Filter</button>
+            <a href="{{ route('admin.tagihan.index') }}" class="btn btn-light">Reset</a>
+        </div>
+    </div>
+</form>
+
 <div class="card border-0 shadow-sm">
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
-            <thead class="table-light"><tr><th>Periode</th><th>Siswa</th><th>Rombel</th><th>Rayon</th><th>Nominal</th><th>Status</th><th width="140">Aksi</th></tr></thead>
+            <thead class="table-light"><tr><th>Periode</th><th>Tahun Ajaran</th><th>Siswa</th><th>Rombel</th><th>Rayon</th><th>Nominal</th><th>Status</th><th width="140">Aksi</th></tr></thead>
             <tbody>
             @forelse($data as $tagihan)
                 <tr>
                     <td>{{ \App\Support\Periode::label($tagihan->periode) }}</td>
+                    <td>{{ $tagihan->siswaAkademik?->tahunAjaran?->nama }}</td>
                     <td>{{ $tagihan->siswaAkademik?->siswa?->nama }}</td>
                     <td>{{ $tagihan->siswaAkademik?->rombel?->nama }}</td>
                     <td>{{ $tagihan->siswaAkademik?->rayon?->nama }}</td>
@@ -65,10 +88,13 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="7" class="text-center py-4 text-muted">Belum ada tagihan.</td></tr>
+                <tr><td colspan="8" class="text-center py-4 text-muted">Belum ada tagihan.</td></tr>
             @endforelse
             </tbody>
         </table>
+    </div>
+    <div class="card-body">
+        {{ $data->links() }}
     </div>
 </div>
 @endsection
