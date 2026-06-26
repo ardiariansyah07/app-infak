@@ -453,6 +453,37 @@ body{
     vertical-align:middle;
 }
 
+.table-number-column{
+
+    width:64px;
+
+    text-align:center;
+
+    white-space:nowrap;
+}
+
+.table-enhancer{
+
+    margin-top:4px;
+}
+
+.table-search{
+
+    max-width:360px;
+}
+
+.table-pagination{
+
+    margin-top:12px;
+
+    justify-content:flex-end;
+}
+
+.table-pagination .btn{
+
+    min-width:36px;
+}
+
 .table-bordered{
 
     border:0;
