@@ -231,6 +231,10 @@ body{
     transition:.3s;
 
     min-height:100vh;
+
+    display:flex;
+
+    flex-direction:column;
 }
 
 .content.expanded{
@@ -276,6 +280,8 @@ body{
 .page{
 
     padding:25px;
+
+    flex:1 0 auto;
 }
 
 .app-footer{
@@ -283,6 +289,8 @@ body{
     margin:0 25px 24px;
 
     padding:16px 0;
+
+    flex-shrink:0;
 
     color:#64748b;
 
@@ -744,6 +752,8 @@ body{
 
 #master-menu,
 #transaksi-menu{
+
+    display:none;
 
     overflow:hidden;
 

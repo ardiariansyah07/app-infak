@@ -33,7 +33,7 @@
             <a href="#" onclick="toggleMasterData(event)">
                 <i class="bi bi-folder2-open"></i>
                 <span class="menu-text">Master Data</span>
-                <span class="ms-auto menu-text"><i id="master-arrow" class="bi bi-chevron-down"></i></span>
+                <span class="ms-auto menu-text"><i id="master-arrow" class="bi bi-chevron-right"></i></span>
             </a>
             <div id="master-menu">
                 <a href="{{ route('admin.tahun-ajaran.index') }}" class="submenu {{ request()->is('admin/tahun-ajaran*') ? 'active' : '' }}">
@@ -66,7 +66,7 @@
             <a href="#" onclick="toggleTransaksi(event)">
                 <i class="bi bi-cash-stack"></i>
                 <span class="menu-text">Transaksi</span>
-                <span class="ms-auto menu-text"><i id="transaksi-arrow" class="bi bi-chevron-down"></i></span>
+                <span class="ms-auto menu-text"><i id="transaksi-arrow" class="bi bi-chevron-right"></i></span>
             </a>
             <div id="transaksi-menu">
                 <a href="{{ route('admin.komitmen-infak.index') }}" class="submenu {{ request()->is('admin/komitmen-infak*') ? 'active' : '' }}">

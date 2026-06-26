@@ -58,7 +58,7 @@ function toggleMasterData(event){
         return;
     }
 
-    if(menu.style.display === 'none'){
+    if(getComputedStyle(menu).display === 'none'){
 
         menu.style.display = 'block';
 
@@ -99,7 +99,7 @@ function toggleTransaksi(event){
         return;
     }
 
-    if(menu.style.display === 'none'){
+    if(getComputedStyle(menu).display === 'none'){
 
         menu.style.display = 'block';
 
