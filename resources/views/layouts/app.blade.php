@@ -36,6 +36,14 @@
 
         <div class="page">
 
+            @php($breadcrumbItems = \App\Support\Breadcrumbs::items())
+
+            @if($breadcrumbItems)
+                <div class="app-breadcrumb">
+                    @include('components.breadcrumb', ['items' => $breadcrumbItems])
+                </div>
+            @endif
+
             @yield('content')
 
         </div>

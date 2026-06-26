@@ -403,12 +403,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
             table.dataset.tableEnhanced = 'true';
 
-            const numberHeader =
-                document.createElement('th');
+            const firstHeaderText =
+                theadRow
+                    .querySelector('th')
+                    ?.textContent
+                    .trim()
+                    .toLowerCase();
 
-            numberHeader.textContent = 'No';
-            numberHeader.classList.add('table-number-column');
-            theadRow.prepend(numberHeader);
+            const hasNumberColumn =
+                firstHeaderText === 'no' || firstHeaderText === 'nomor';
+
+            if(hasNumberColumn){
+                theadRow
+                    .querySelector('th')
+                    ?.classList
+                    .add('table-number-column');
+            }else{
+
+                const numberHeader =
+                    document.createElement('th');
+
+                numberHeader.textContent = 'No';
+                numberHeader.classList.add('table-number-column');
+                theadRow.prepend(numberHeader);
+
+            }
 
             const originalRows =
                 Array
@@ -431,7 +450,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
 
                         const numberCell =
-                            document.createElement('td');
+                            hasNumberColumn
+                                ? row.querySelector('td')
+                                : document.createElement('td');
 
                         numberCell.classList.add(
                             'table-number-column',
@@ -439,7 +460,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             'fw-semibold'
                         );
 
-                        row.prepend(numberCell);
+                        if(! hasNumberColumn){
+                            row.prepend(numberCell);
+                        }
 
                         return {
                             row,

@@ -4,13 +4,6 @@
 
 @section('content')
 <div class="mb-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb mb-2">
-            <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('admin.guru.index') }}">Guru</a></li>
-            <li class="breadcrumb-item active">Tambah</li>
-        </ol>
-    </nav>
     <h2 class="fw-bold mb-1">Tambah Guru</h2>
     <p class="text-muted mb-0">Tambahkan data guru sekolah.</p>
 </div>

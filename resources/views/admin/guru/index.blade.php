@@ -6,36 +6,6 @@
 
     <div>
 
-        <nav>
-
-            <ol class="breadcrumb mb-2">
-
-                <li class="breadcrumb-item">
-
-                    <a href="{{ route('admin.dashboard') }}">
-
-                        Dashboard
-
-                    </a>
-
-                </li>
-
-                <li class="breadcrumb-item">
-
-                    Master Data
-
-                </li>
-
-                <li class="breadcrumb-item active">
-
-                    Guru
-
-                </li>
-
-            </ol>
-
-        </nav>
-
         <h2 class="fw-bold mb-1">
 
             Guru
@@ -69,33 +39,6 @@
 <div class="card shadow-sm border-0">
 
     <div class="card-body">
-
-        <div class="row mb-3">
-
-            <div class="col-md-2">
-
-                <select class="form-select">
-
-                    <option>10</option>
-
-                    <option>25</option>
-
-                    <option>50</option>
-
-                </select>
-
-            </div>
-
-            <div class="col-md-4 ms-auto">
-
-                <input
-                    type="text"
-                    class="form-control"
-                    placeholder="Cari Guru...">
-
-            </div>
-
-        </div>
 
         <div class="table-responsive">
 

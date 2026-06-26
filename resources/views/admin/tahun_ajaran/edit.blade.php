@@ -4,34 +4,6 @@
 
 @section('content')
 
-<nav aria-label="breadcrumb">
-
-    <ol class="breadcrumb">
-
-        <li class="breadcrumb-item">
-
-            <a href="{{ url('/admin/dashboard') }}">
-                Dashboard
-            </a>
-
-        </li>
-
-        <li class="breadcrumb-item">
-
-            <a href="{{ route('admin.tahun-ajaran.index') }}">
-                Tahun Ajaran
-            </a>
-
-        </li>
-
-        <li class="breadcrumb-item active">
-            Edit
-        </li>
-
-    </ol>
-
-</nav>
-
 <div class="mb-4">
 
     <h2 class="page-title mb-1">

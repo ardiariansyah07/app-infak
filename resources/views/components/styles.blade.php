@@ -819,6 +819,11 @@ body{
 
 /* BREADCRUMB */
 
+.app-breadcrumb{
+
+    margin-bottom:18px;
+}
+
 .breadcrumb{
 
     margin-bottom:8px;
