@@ -17,6 +17,7 @@ use App\Support\AkademikStatus;
 use App\Support\SimpleXlsx;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Throwable;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -135,9 +136,12 @@ class ImportController extends Controller
                 continue;
             }
 
+            $user = $this->userForGuru($row);
+
             Guru::updateOrCreate(
                 ['nip' => $row[0]],
                 [
+                    'user_id' => $user?->id,
                     'nama' => $row[1],
                     'jenis_kelamin' => $row[2] ?: 'L',
                     'no_hp' => $row[3] ?? null,
@@ -216,12 +220,12 @@ class ImportController extends Controller
         foreach ($validRows as $data) {
             DB::transaction(function () use ($data) {
                 ['row' => $row, 'tahun' => $tahun, 'rombel' => $rombel, 'rayon' => $rayon] = $data;
-                $userId = User::where('email', $row[8] ?? null)->value('id');
+                $user = $this->userForSiswa($row);
 
                 $siswa = Siswa::updateOrCreate(
                     ['nis' => $row[0]],
                     [
-                        'user_id' => $userId,
+                        'user_id' => $user?->id,
                         'nama' => $row[1],
                         'jenis_kelamin' => in_array($row[2] ?? null, ['L', 'P']) ? $row[2] : 'L',
                         'status' => in_array($row[3] ?? null, ['aktif', 'alumni']) ? $row[3] : 'aktif',
@@ -383,5 +387,43 @@ class ImportController extends Controller
         $date = $this->dateValue($value);
 
         return $date ? substr($date, 0, 7) : null;
+    }
+
+    private function userForGuru(array $row): ?User
+    {
+        $email = $row[4] ?? null;
+
+        if (! $email) {
+            return null;
+        }
+
+        return User::updateOrCreate(
+            ['email' => $email],
+            [
+                'name' => $row[1],
+                'password' => Hash::make('Wikrama'.$row[0].'*'),
+                'role' => User::ROLE_PEMBIMBING,
+            ]
+        );
+    }
+
+    private function userForSiswa(array $row): ?User
+    {
+        $email = $row[8] ?? null;
+
+        if (! $email) {
+            return null;
+        }
+
+        $nis = (string) $row[0];
+
+        return User::updateOrCreate(
+            ['email' => $email],
+            [
+                'name' => $row[1],
+                'password' => Hash::make('Wikrama'.substr($nis, -4).'*'),
+                'role' => User::ROLE_ORANG_TUA,
+            ]
+        );
     }
 }
