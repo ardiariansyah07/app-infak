@@ -9,7 +9,16 @@
         <p class="text-muted mb-0">Tagihan bulanan dan status pelunasannya.</p>
     </div>
     <div class="d-flex gap-2 flex-wrap justify-content-end">
-        @include('components.import-actions', ['master' => 'tagihan-awal'])
+        @include('components.import-actions', [
+            'master' => 'saldo-awal',
+            'templateLabel' => 'Template Saldo Awal',
+            'importLabel' => 'Import Saldo Awal',
+        ])
+        @include('components.import-actions', [
+            'master' => 'tagihan-awal',
+            'templateLabel' => 'Template Per Bulan',
+            'importLabel' => 'Import Per Bulan',
+        ])
         <a href="{{ route('admin.tagihan.create') }}" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i>
             Tambah Tagihan
@@ -29,8 +38,9 @@
 </form>
 
 <div class="alert alert-info">
-    Untuk data awal tahun ajaran lama, gunakan <strong>Template XLSX</strong> di kanan atas halaman ini.
-    Isi satu baris per siswa per bulan: nominal tagihan dan nominal yang sudah terbayar.
+    Untuk data awal tanpa riwayat detail, gunakan <strong>Template Saldo Awal</strong>.
+    Isi satu baris per siswa: bulan mulai, nominal bulanan, jumlah bulan lunas, sebagian, dan belum.
+    Jika punya rincian per bulan, gunakan <strong>Template Per Bulan</strong>.
 </div>
 
 <div class="card border-0 shadow-sm">

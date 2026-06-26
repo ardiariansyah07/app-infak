@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Support\InfakStatus;
 use App\Support\AkademikStatus;
 use App\Support\SimpleXlsx;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -31,6 +32,7 @@ class ImportController extends Controller
         'siswa' => ['nis', 'nama', 'jenis_kelamin', 'status', 'tahun_ajaran', 'tingkat', 'rombel', 'rayon', 'email_login'],
         'komitmen-infak' => ['nis', 'tahun_ajaran', 'nominal_bulanan', 'mulai_bulan'],
         'tagihan-awal' => ['nis', 'tahun_ajaran', 'periode', 'nominal_tagihan', 'nominal_terbayar', 'tanggal_bayar'],
+        'saldo-awal' => ['nis', 'tahun_ajaran', 'mulai_bulan', 'nominal_bulanan', 'bulan_lunas', 'bulan_sebagian', 'nominal_sebagian', 'bulan_belum', 'tanggal_import'],
     ];
 
     private array $examples = [
@@ -63,6 +65,10 @@ class ImportController extends Controller
             ['nis' => '24250001', 'tahun_ajaran' => '2024/2025', 'periode' => '2024-07', 'nominal_tagihan' => '50000', 'nominal_terbayar' => '50000', 'tanggal_bayar' => '2024-07-10'],
             ['nis' => '24250001', 'tahun_ajaran' => '2025/2026', 'periode' => '2025-07', 'nominal_tagihan' => '50000', 'nominal_terbayar' => '20000', 'tanggal_bayar' => '2025-07-10'],
             ['nis' => '24250001', 'tahun_ajaran' => '2025/2026', 'periode' => '2025-08', 'nominal_tagihan' => '50000', 'nominal_terbayar' => '0', 'tanggal_bayar' => ''],
+        ],
+        'saldo-awal' => [
+            ['nis' => '24250001', 'tahun_ajaran' => '2025/2026', 'mulai_bulan' => '2025-07', 'nominal_bulanan' => '50000', 'bulan_lunas' => '3', 'bulan_sebagian' => '0', 'nominal_sebagian' => '0', 'bulan_belum' => '9', 'tanggal_import' => '2026-06-26'],
+            ['nis' => '24250002', 'tahun_ajaran' => '2025/2026', 'mulai_bulan' => '2025-07', 'nominal_bulanan' => '50000', 'bulan_lunas' => '2', 'bulan_sebagian' => '1', 'nominal_sebagian' => '20000', 'bulan_belum' => '9', 'tanggal_import' => '2026-06-26'],
         ],
     ];
 
@@ -98,6 +104,7 @@ class ImportController extends Controller
                 'siswa' => $this->siswa($rows),
                 'komitmen-infak' => $this->komitmenInfak($rows),
                 'tagihan-awal' => $this->tagihanAwal($rows),
+                'saldo-awal' => $this->saldoAwal($rows),
             };
         } catch (Throwable $exception) {
             report($exception);
@@ -383,6 +390,122 @@ class ImportController extends Controller
         return $count;
     }
 
+    private function saldoAwal(array $rows): int
+    {
+        $count = 0;
+
+        foreach ($rows as $row) {
+            $siswa = Siswa::where('nis', $row[0] ?? null)->first();
+            $tahun = TahunAjaran::where('nama', $row[1] ?? null)->first();
+            $mulaiBulan = $this->monthStart($row[2] ?? null);
+            $nominalBulanan = $this->moneyValue($row[3] ?? 0);
+            $bulanLunas = max(0, (int) ($row[4] ?? 0));
+            $bulanSebagian = max(0, (int) ($row[5] ?? 0));
+            $nominalSebagian = min($nominalBulanan, $this->moneyValue($row[6] ?? 0));
+            $bulanBelum = max(0, (int) ($row[7] ?? 0));
+
+            if (! $siswa || ! $tahun || ! $mulaiBulan || $nominalBulanan <= 0) {
+                continue;
+            }
+
+            $akademik = $siswa->akademik()
+                ->where('tahun_ajaran_id', $tahun->id)
+                ->first();
+
+            if (! $akademik) {
+                continue;
+            }
+
+            $totalBulan = $bulanLunas + $bulanSebagian + $bulanBelum;
+
+            if ($totalBulan <= 0) {
+                continue;
+            }
+
+            DB::transaction(function () use ($row, $siswa, $akademik, $mulaiBulan, $nominalBulanan, $bulanLunas, $bulanSebagian, $nominalSebagian, $totalBulan) {
+                $tagihanList = collect();
+
+                for ($index = 0; $index < $totalBulan; $index++) {
+                    $periode = $mulaiBulan->addMonthsNoOverflow($index)->format('Y-m');
+
+                    $tagihanList->push(TagihanInfak::updateOrCreate(
+                        [
+                            'siswa_akademik_id' => $akademik->id,
+                            'periode' => $periode,
+                        ],
+                        [
+                            'nominal' => $nominalBulanan,
+                            'status' => 'belum',
+                        ]
+                    ));
+                }
+
+                $existingImportPaymentIds = $tagihanList
+                    ->flatMap(fn (TagihanInfak $tagihan) => $tagihan->alokasiPembayaran()
+                        ->whereHas('pembayaran', fn ($query) => $query->where('bukti_transfer', 'import-saldo-awal'))
+                        ->pluck('pembayaran_id'))
+                    ->unique()
+                    ->values();
+
+                if ($existingImportPaymentIds->isNotEmpty()) {
+                    DB::table('alokasi_pembayaran')
+                        ->whereIn('pembayaran_id', $existingImportPaymentIds)
+                        ->delete();
+
+                    Pembayaran::whereIn('id', $existingImportPaymentIds)->delete();
+                }
+
+                $alokasi = [];
+
+                foreach ($tagihanList as $index => $tagihan) {
+                    $nominalTerbayar = match (true) {
+                        $index < $bulanLunas => $nominalBulanan,
+                        $index < ($bulanLunas + $bulanSebagian) => $nominalSebagian,
+                        default => 0,
+                    };
+
+                    if ($nominalTerbayar > 0) {
+                        $alokasi[] = [
+                            'tagihan' => $tagihan,
+                            'nominal' => $nominalTerbayar,
+                        ];
+                    }
+                }
+
+                if ($alokasi !== []) {
+                    $pembayaran = Pembayaran::create([
+                        'siswa_id' => $siswa->id,
+                        'tanggal' => $this->dateValue($row[8] ?? null) ?: now()->toDateString(),
+                        'nominal' => collect($alokasi)->sum('nominal'),
+                        'bukti_transfer' => 'import-saldo-awal',
+                        'status_verifikasi' => 'valid',
+                    ]);
+
+                    foreach ($alokasi as $item) {
+                        $pembayaran->alokasiPembayaran()->create([
+                            'tagihan_infak_id' => $item['tagihan']->id,
+                            'nominal' => $item['nominal'],
+                        ]);
+                    }
+                }
+
+                $tagihanList->each(fn (TagihanInfak $tagihan) => InfakStatus::refreshTagihan($tagihan));
+
+                KomitmenInfak::updateOrCreate(
+                    ['siswa_akademik_id' => $akademik->id],
+                    [
+                        'nominal_bulanan' => $nominalBulanan,
+                        'mulai_bulan' => $mulaiBulan->toDateString(),
+                    ]
+                );
+            });
+
+            $count++;
+        }
+
+        return $count;
+    }
+
     private function moneyValue(mixed $value): int
     {
         return (int) preg_replace('/[^0-9]/', '', (string) $value);
@@ -416,6 +539,13 @@ class ImportController extends Controller
         $date = $this->dateValue($value);
 
         return $date ? substr($date, 0, 7) : null;
+    }
+
+    private function monthStart(mixed $value): ?CarbonImmutable
+    {
+        $month = $this->monthValue($value);
+
+        return $month ? CarbonImmutable::createFromFormat('Y-m-d', $month.'-01') : null;
     }
 
     private function userForGuru(array $row): ?User
