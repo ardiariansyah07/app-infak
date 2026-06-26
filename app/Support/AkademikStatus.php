@@ -11,13 +11,7 @@ class AkademikStatus
 {
     public static function syncAll(): void
     {
-        $tahunAktifId = TahunAjaran::where('aktif', true)->value('id');
-
-        Siswa::with('akademik.tahunAjaran')->chunk(100, function ($siswaList) use ($tahunAktifId) {
-            foreach ($siswaList as $siswa) {
-                self::syncSiswa($siswa, $tahunAktifId);
-            }
-        });
+        self::syncMany(Siswa::pluck('id'));
     }
 
     public static function syncSiswa(Siswa $siswa, ?int $tahunAktifId = null): void
