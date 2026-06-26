@@ -39,12 +39,12 @@
                         </x-dropdown-link>
 
                         <!-- Authentication -->
-                        <form method="POST" action="{{ route('logout') }}">
+                        <form method="POST" action="{{ route('logout') }}" class="confirm-form" data-confirm-title="Logout?" data-confirm-text="Anda akan keluar dari aplikasi." data-confirm-button="Ya, Logout">
                             @csrf
 
                             <x-dropdown-link :href="route('logout')"
                                     onclick="event.preventDefault();
-                                                this.closest('form').submit();">
+                                                this.closest('form').requestSubmit();">
                                 {{ __('Log Out') }}
                             </x-dropdown-link>
                         </form>
@@ -85,12 +85,12 @@
                 </x-responsive-nav-link>
 
                 <!-- Authentication -->
-                <form method="POST" action="{{ route('logout') }}">
+                <form method="POST" action="{{ route('logout') }}" class="confirm-form" data-confirm-title="Logout?" data-confirm-text="Anda akan keluar dari aplikasi." data-confirm-button="Ya, Logout">
                     @csrf
 
                     <x-responsive-nav-link :href="route('logout')"
                             onclick="event.preventDefault();
-                                        this.closest('form').submit();">
+                                        this.closest('form').requestSubmit();">
                         {{ __('Log Out') }}
                     </x-responsive-nav-link>
                 </form>

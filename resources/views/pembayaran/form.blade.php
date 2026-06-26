@@ -11,11 +11,13 @@
         <div class="row g-3">
             <div class="col-md-6">
                 <label class="form-label">Siswa</label>
-                <select name="siswa_id" class="form-select" required>
+                <input type="search" class="form-control mb-2" placeholder="Cari NIS atau nama siswa..." data-select-filter="siswa_id">
+                <select name="siswa_id" id="siswa_id" class="form-select" required>
                     @foreach($siswa as $item)
-                        <option value="{{ $item->id }}">{{ $item->nama }} - {{ $item->nis }}</option>
+                        <option value="{{ $item->id }}">{{ $item->nis }} - {{ $item->nama }}</option>
                     @endforeach
                 </select>
+                <div class="form-text">Ketik NIS atau nama, lalu pilih siswa dari dropdown.</div>
             </div>
             <div class="col-md-3">
                 <label class="form-label">Tanggal</label>
@@ -26,13 +28,9 @@
                 <input name="nominal" type="number" min="1000" class="form-control" required>
             </div>
             <div class="col-md-12">
-                <label class="form-label">Alokasi Tagihan</label>
-                <select name="tagihan_infak_ids[]" class="form-select" multiple>
-                    @foreach($tagihan as $item)
-                        <option value="{{ $item->id }}">{{ $item->siswaAkademik?->siswa?->nama }} - {{ $item->periode }} - sisa Rp {{ number_format($item->sisa, 0, ',', '.') }}</option>
-                    @endforeach
-                </select>
-                <div class="form-text">Pilih tagihan yang dibayar. Sistem akan mengalokasikan nominal dari periode terlama.</div>
+                <div class="alert alert-info mb-0">
+                    Alokasi tagihan otomatis dari periode tertua siswa yang dipilih. Pembayaran sebagian akan tercatat sebagai sisa tagihan.
+                </div>
             </div>
         </div>
         <button class="btn btn-primary mt-4">Simpan</button>

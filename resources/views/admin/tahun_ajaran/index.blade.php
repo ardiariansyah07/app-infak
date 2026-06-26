@@ -85,95 +85,52 @@
 
 </div>
 
-<table class="table table-bordered">
-
-    <thead>
-        <tr>
-            <th>Nama</th>
-            <th>Mulai</th>
-            <th>Selesai</th>
-            <th>Status</th>
-            <th width="150">Aksi</th>
-        </tr>
-    </thead>
-
-    <tbody>
-
-    @forelse($data as $item)
-
-    <tr>
-
-        <td>{{ $item->nama }}</td>
-
-        <td>{{ $item->tanggal_mulai }}</td>
-
-        <td>{{ $item->tanggal_selesai }}</td>
-
-        <td>
-
-            @if($item->aktif)
-
-            <span class="badge bg-success">
-                Aktif
-            </span>
-
-            @else
-
-            <span class="badge bg-secondary">
-                Nonaktif
-            </span>
-
-            @endif
-
-        </td>
-
-        <td>
-
-            <a href="{{ route('admin.tahun-ajaran.edit',$item->id) }}"
-                class="btn btn-warning btn-sm">
-
-                    <i class="bi bi-pencil-square"></i>
-
-                    Edit
-
-            </a>
-
-            <form
-                action="{{ route('admin.tahun-ajaran.destroy',$item->id) }}"
-                method="POST"
-                class="delete-form">
-
-                @csrf
-                @method('DELETE')
-
-                <button
-                    type="submit"
-                    class="btn btn-danger btn-sm">
-
-                    <i class="bi bi-trash"></i>
-
-                    Hapus
-
-                </button>
-
-            </form>
-
-        </td>
-
-    </tr>
-
-    @empty
-
-    <tr>
-        <td colspan="5">
-            Belum ada data
-        </td>
-    </tr>
-
-    @endforelse
-
-    </tbody>
-
-</table>
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Nama</th>
+                    <th>Mulai</th>
+                    <th>Selesai</th>
+                    <th>Status</th>
+                    <th width="170">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+            @forelse($data as $item)
+                <tr>
+                    <td>{{ $item->nama }}</td>
+                    <td>{{ $item->tanggal_mulai?->format('d/m/Y') }}</td>
+                    <td>{{ $item->tanggal_selesai?->format('d/m/Y') }}</td>
+                    <td>
+                        <span class="badge bg-{{ $item->aktif ? 'success' : 'secondary' }}">
+                            {{ $item->aktif ? 'Aktif' : 'Nonaktif' }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{{ route('admin.tahun-ajaran.edit', $item) }}" class="btn btn-sm btn-warning">
+                            <i class="bi bi-pencil-square"></i>
+                            Edit
+                        </a>
+                        <form action="{{ route('admin.tahun-ajaran.destroy', $item) }}" method="POST" class="d-inline delete-form">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-sm btn-danger">
+                                <i class="bi bi-trash"></i>
+                                Hapus
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">Belum ada tahun ajaran.</td>
+                </tr>
+            @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
 
 @endsection

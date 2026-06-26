@@ -14,4 +14,10 @@ class TahunAjaran extends Model
         'tanggal_selesai',
         'aktif',
     ];
+
+    protected $casts = [
+        'tanggal_mulai' => 'date',
+        'tanggal_selesai' => 'date',
+        'aktif' => 'boolean',
+    ];
 }

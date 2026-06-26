@@ -22,6 +22,10 @@ class DashboardController extends Controller
             'pembayaranPending' => Pembayaran::whereIn('siswa_id', $siswaIds)
                 ->where('status_verifikasi', 'pending')
                 ->count(),
+            'tagihanBulanan' => TagihanInfak::whereHas(
+                'siswaAkademik',
+                fn ($query) => $query->whereIn('siswa_id', $siswaIds)
+            )->orderBy('periode')->get(),
         ]);
     }
 

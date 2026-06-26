@@ -23,7 +23,9 @@ class KomitmenInfakController extends Controller
             ->where('status', 'aktif')
             ->get();
 
-        return view('ortu.komitmen.index', compact('data', 'siswaAkademik'));
+        $isSiswaLogin = Auth::user()->siswa !== null;
+
+        return view('ortu.komitmen.index', compact('data', 'siswaAkademik', 'isSiswaLogin'));
     }
 
     public function update(Request $request)
@@ -38,6 +40,10 @@ class KomitmenInfakController extends Controller
         $akademik = SiswaAkademik::whereIn('siswa_id', $siswaIds)
             ->where('id', $validated['siswa_akademik_id'])
             ->firstOrFail();
+
+        if (Auth::user()->siswa && KomitmenInfak::where('siswa_akademik_id', $akademik->id)->exists()) {
+            return back()->with('error', 'Nominal infak hanya bisa diisi satu kali. Perubahan dapat dilakukan oleh admin atau petugas infak.');
+        }
 
         KomitmenInfak::updateOrCreate(
             ['siswa_akademik_id' => $akademik->id],

@@ -23,7 +23,11 @@
             <li>
 
                 <form method="POST"
-                      action="{{ route('logout') }}">
+                      action="{{ route('logout') }}"
+                      class="confirm-form"
+                      data-confirm-title="Logout?"
+                      data-confirm-text="Anda akan keluar dari aplikasi."
+                      data-confirm-button="Ya, Logout">
 
                     @csrf
 

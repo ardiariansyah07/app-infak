@@ -28,7 +28,7 @@
             <input name="mulai_bulan" type="date" class="form-control" value="{{ old('mulai_bulan', optional($komitmen->mulai_bulan)->format('Y-m-d')) }}">
         </div>
         <button class="btn btn-primary">Simpan</button>
-        <a href="{{ route('admin.komitmen-infak.index') }}" class="btn btn-light">Batal</a>
+        <a href="{{ route(($prefix ?? 'admin') . '.komitmen-infak.index') }}" class="btn btn-light">Batal</a>
     </div>
 </form>
 @endsection

@@ -8,6 +8,7 @@ use App\Models\Rayon;
 use App\Models\SiswaAkademik;
 use App\Models\TagihanInfak;
 use App\Support\SimplePdf;
+use App\Support\Periode;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -23,55 +24,68 @@ class LaporanController extends Controller
     public function pdf(Request $request): Response
     {
         $data = $this->reportData($request);
-        $pdf = new SimplePdf('Laporan Infak Sekolah');
+        $jenis = $request->string('jenis', 'ringkasan')->toString();
+        abort_unless(in_array($jenis, ['ringkasan', 'rayon', 'tunggakan'], true), 404);
 
-        $pdf->heading('Laporan Infak Sekolah');
-        $pdf->line('Periode: '.($data['periode'] !== '' ? $data['periode'] : 'Semua periode'));
+        $titles = [
+            'ringkasan' => 'Laporan Ringkasan Infak Sekolah',
+            'rayon' => 'Laporan Rekap Infak Per Rayon',
+            'tunggakan' => 'Laporan Tagihan Belum Lunas',
+        ];
+
+        $pdf = new SimplePdf($titles[$jenis]);
+
+        $pdf->heading($titles[$jenis]);
+        $pdf->line('Periode: '.($data['periode'] !== '' ? Periode::label($data['periode']) : 'Semua periode'));
         $pdf->line('Tanggal cetak: '.now()->format('d/m/Y H:i'));
         $pdf->space();
 
-        $pdf->subheading('Ringkasan');
-        $pdf->tableRow(['Total Tagihan', $this->rupiah($data['totalTagihan'])], [140, 160]);
-        $pdf->tableRow(['Pembayaran Valid', $this->rupiah($data['pembayaranValid'])], [140, 160]);
-        $pdf->tableRow(['Estimasi Tunggakan', $this->rupiah($data['tunggakan'])], [140, 160]);
-        $pdf->tableRow(['Pending Validasi', $data['pembayaranPending'].' pembayaran'], [140, 160]);
-        $pdf->space();
+        if ($jenis === 'ringkasan') {
+            $pdf->subheading('Ringkasan');
+            $pdf->tableRow(['Total Tagihan', $this->rupiah($data['totalTagihan'])], [180, 180]);
+            $pdf->tableRow(['Pembayaran Valid', $this->rupiah($data['pembayaranValid'])], [180, 180]);
+            $pdf->tableRow(['Estimasi Tunggakan', $this->rupiah($data['tunggakan'])], [180, 180]);
+            $pdf->tableRow(['Pending Validasi', $data['pembayaranPending'].' pembayaran'], [180, 180]);
+            $pdf->space();
 
-        $pdf->subheading('Status Tagihan');
-        $pdf->tableRow(['Status', 'Jumlah', 'Nominal'], [120, 80, 160], true);
-        foreach ($data['statusTagihan'] as $status) {
-            $pdf->tableRow([ucfirst($status->status), $status->total, $this->rupiah($status->nominal)], [120, 80, 160]);
-        }
-        $pdf->space();
-
-        $pdf->subheading('Rekap Per Rayon');
-        $pdf->tableRow(['Rayon', 'Pembimbing', 'Siswa', 'Tagihan', 'Valid', 'Tunggakan'], [80, 110, 45, 85, 85, 85], true);
-        foreach ($data['rekapRayon'] as $rayon) {
-            $pdf->tableRow([
-                $rayon['nama'],
-                $rayon['pembimbing'],
-                $rayon['siswa'],
-                $this->rupiah($rayon['tagihan']),
-                $this->rupiah($rayon['pembayaran']),
-                $this->rupiah($rayon['tunggakan']),
-            ], [80, 110, 45, 85, 85, 85]);
-        }
-        $pdf->space();
-
-        $pdf->subheading('Tagihan Belum Lunas');
-        $pdf->tableRow(['Periode', 'Siswa', 'Rombel', 'Rayon', 'Nominal', 'Status'], [60, 120, 80, 90, 90, 60], true);
-        foreach ($data['siswaMenunggak'] as $tagihan) {
-            $pdf->tableRow([
-                $tagihan->periode,
-                $tagihan->siswaAkademik?->siswa?->nama ?? '-',
-                $tagihan->siswaAkademik?->rombel?->nama ?? '-',
-                $tagihan->siswaAkademik?->rayon?->nama ?? '-',
-                $this->rupiah($tagihan->nominal),
-                $tagihan->status,
-            ], [60, 120, 80, 90, 90, 60]);
+            $pdf->subheading('Status Tagihan');
+            $pdf->tableRow(['Status', 'Jumlah', 'Nominal'], [120, 80, 160], true);
+            foreach ($data['statusTagihan'] as $status) {
+                $pdf->tableRow([ucfirst($status->status), $status->total, $this->rupiah($status->nominal)], [120, 80, 160]);
+            }
         }
 
-        $filename = 'laporan-infak'.($data['periode'] !== '' ? '-'.$data['periode'] : '').'.pdf';
+        if ($jenis === 'rayon') {
+            $pdf->subheading('Rekap Per Rayon');
+            $pdf->tableRow(['Rayon', 'Pembimbing', 'Siswa', 'Tagihan', 'Valid', 'Tunggakan'], [80, 110, 45, 85, 85, 85], true);
+            foreach ($data['rekapRayon'] as $rayon) {
+                $pdf->tableRow([
+                    $rayon['nama'],
+                    $rayon['pembimbing'],
+                    $rayon['siswa'],
+                    $this->rupiah($rayon['tagihan']),
+                    $this->rupiah($rayon['pembayaran']),
+                    $this->rupiah($rayon['tunggakan']),
+                ], [80, 110, 45, 85, 85, 85]);
+            }
+        }
+
+        if ($jenis === 'tunggakan') {
+            $pdf->subheading('Tagihan Belum Lunas');
+            $pdf->tableRow(['Periode', 'Siswa', 'Rombel', 'Rayon', 'Nominal', 'Status'], [80, 120, 75, 85, 85, 65], true);
+            foreach ($data['siswaMenunggak'] as $tagihan) {
+                $pdf->tableRow([
+                    Periode::label($tagihan->periode),
+                    $tagihan->siswaAkademik?->siswa?->nama ?? '-',
+                    $tagihan->siswaAkademik?->rombel?->nama ?? '-',
+                    $tagihan->siswaAkademik?->rayon?->nama ?? '-',
+                    $this->rupiah($tagihan->nominal),
+                    $tagihan->status,
+                ], [80, 120, 75, 85, 85, 65]);
+            }
+        }
+
+        $filename = 'laporan-infak-'.$jenis.($data['periode'] !== '' ? '-'.$data['periode'] : '').'.pdf';
 
         return response($pdf->output(), 200, [
             'Content-Type' => 'application/pdf',

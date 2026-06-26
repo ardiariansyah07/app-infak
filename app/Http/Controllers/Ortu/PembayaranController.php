@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Pembayaran;
 use App\Models\Siswa;
 use App\Models\TagihanInfak;
+use App\Support\InfakAllocator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +21,12 @@ class PembayaranController extends Controller
             ->latest()
             ->get();
 
-        return view('ortu.pembayaran.index', compact('data'));
+        $tagihanBulanan = TagihanInfak::whereHas(
+            'siswaAkademik',
+            fn ($query) => $query->whereIn('siswa_id', $this->siswaIds())
+        )->orderBy('periode')->get();
+
+        return view('ortu.pembayaran.index', compact('data', 'tagihanBulanan'));
     }
 
     public function create()
@@ -46,15 +52,11 @@ class PembayaranController extends Controller
             'tanggal' => ['required', 'date'],
             'nominal' => ['required', 'integer', 'min:1000'],
             'bukti_transfer' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
-            'tagihan_infak_ids' => ['required', 'array', 'min:1'],
+            'tagihan_infak_ids' => ['array'],
             'tagihan_infak_ids.*' => ['exists:tagihan_infak,id'],
         ]);
 
-        $allowedTagihanCount = TagihanInfak::whereIn('id', $validated['tagihan_infak_ids'])
-            ->whereHas('siswaAkademik', fn ($query) => $query->whereIn('siswa_id', $siswaIds))
-            ->count();
-
-        abort_if($allowedTagihanCount !== count($validated['tagihan_infak_ids']), 403);
+        $this->ensureRequestedTagihanBelongToSiswa($validated['tagihan_infak_ids'] ?? [], (int) $validated['siswa_id']);
 
         $path = $request->file('bukti_transfer')->store('bukti-pembayaran', 'public');
 
@@ -67,27 +69,7 @@ class PembayaranController extends Controller
                 'status_verifikasi' => 'pending',
             ]);
 
-            $remaining = $pembayaran->nominal;
-
-            TagihanInfak::whereIn('id', $validated['tagihan_infak_ids'])
-                ->orderBy('periode')
-                ->get()
-                ->each(function (TagihanInfak $tagihan) use ($pembayaran, &$remaining) {
-                    if ($remaining <= 0) {
-                        return;
-                    }
-
-                    $amount = min($remaining, $tagihan->sisa);
-
-                    if ($amount > 0) {
-                        $pembayaran->alokasiPembayaran()->create([
-                            'tagihan_infak_id' => $tagihan->id,
-                            'nominal' => $amount,
-                        ]);
-
-                        $remaining -= $amount;
-                    }
-                });
+            InfakAllocator::allocateOldest($pembayaran);
         });
 
         return redirect()->route('ortu.pembayaran.index')->with('success', 'Laporan pembayaran dikirim dan menunggu validasi');
@@ -102,5 +84,18 @@ class PembayaranController extends Controller
         }
 
         return $user->orangTua?->siswa()->pluck('siswa.id') ?? collect();
+    }
+
+    private function ensureRequestedTagihanBelongToSiswa(array $tagihanIds, int $siswaId): void
+    {
+        if ($tagihanIds === []) {
+            return;
+        }
+
+        $allowedTagihanCount = TagihanInfak::whereIn('id', $tagihanIds)
+            ->whereHas('siswaAkademik', fn ($query) => $query->where('siswa_id', $siswaId))
+            ->count();
+
+        abort_if($allowedTagihanCount !== count($tagihanIds), 403);
     }
 }

@@ -11,11 +11,14 @@ class KomitmenInfakController extends Controller
 {
     public function index()
     {
-        $data = KomitmenInfak::with('siswaAkademik.siswa', 'siswaAkademik.rombel', 'siswaAkademik.rayon')
+        $data = KomitmenInfak::with('siswaAkademik.siswa', 'siswaAkademik.rombel', 'siswaAkademik.rayon', 'siswaAkademik.tagihanInfak')
             ->latest()
             ->get();
 
-        return view('admin.komitmen.index', compact('data'));
+        return view('admin.komitmen.index', [
+            'data' => $data,
+            'prefix' => $this->prefix(),
+        ]);
     }
 
     public function create()
@@ -23,8 +26,9 @@ class KomitmenInfakController extends Controller
         return view('admin.komitmen.form', [
             'komitmen' => new KomitmenInfak,
             'siswaAkademik' => $this->siswaAkademikOptions(),
-            'action' => route('admin.komitmen-infak.store'),
+            'action' => route($this->prefix().'.komitmen-infak.store'),
             'method' => 'POST',
+            'prefix' => $this->prefix(),
         ]);
     }
 
@@ -38,7 +42,7 @@ class KomitmenInfakController extends Controller
 
         KomitmenInfak::create($validated);
 
-        return redirect()->route('admin.komitmen-infak.index')->with('success', 'Komitmen infak berhasil disimpan');
+        return redirect()->route($this->prefix().'.komitmen-infak.index')->with('success', 'Komitmen infak berhasil disimpan');
     }
 
     public function edit(KomitmenInfak $komitmenInfak)
@@ -46,8 +50,9 @@ class KomitmenInfakController extends Controller
         return view('admin.komitmen.form', [
             'komitmen' => $komitmenInfak,
             'siswaAkademik' => $this->siswaAkademikOptions(),
-            'action' => route('admin.komitmen-infak.update', $komitmenInfak),
+            'action' => route($this->prefix().'.komitmen-infak.update', $komitmenInfak),
             'method' => 'PUT',
+            'prefix' => $this->prefix(),
         ]);
     }
 
@@ -61,14 +66,19 @@ class KomitmenInfakController extends Controller
 
         $komitmenInfak->update($validated);
 
-        return redirect()->route('admin.komitmen-infak.index')->with('success', 'Komitmen infak berhasil diperbarui');
+        return redirect()->route($this->prefix().'.komitmen-infak.index')->with('success', 'Komitmen infak berhasil diperbarui');
     }
 
     public function destroy(KomitmenInfak $komitmenInfak)
     {
         $komitmenInfak->delete();
 
-        return redirect()->route('admin.komitmen-infak.index')->with('success', 'Komitmen infak berhasil dihapus');
+        return redirect()->route($this->prefix().'.komitmen-infak.index')->with('success', 'Komitmen infak berhasil dihapus');
+    }
+
+    private function prefix(): string
+    {
+        return str(request()->route()?->getName() ?? 'admin.')->before('.')->toString();
     }
 
     private function siswaAkademikOptions()

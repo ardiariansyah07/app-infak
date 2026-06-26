@@ -187,22 +187,23 @@
                                class="btn btn-warning btn-sm">
 
                                 <i class="bi bi-pencil-square"></i>
+                                Edit
 
                             </a>
 
                             <form
                                 action="{{ route('admin.guru.destroy',$guru->id) }}"
                                 method="POST"
-                                class="d-inline">
+                                class="d-inline delete-form">
 
                                 @csrf
                                 @method('DELETE')
 
                                 <button
-                                    class="btn btn-danger btn-sm"
-                                    onclick="return confirm('Hapus data ini?')">
+                                    class="btn btn-danger btn-sm">
 
                                     <i class="bi bi-trash"></i>
+                                    Hapus
 
                                 </button>
 

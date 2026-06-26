@@ -9,6 +9,7 @@ use App\Models\Rombel;
 use App\Models\Siswa;
 use App\Models\TahunAjaran;
 use App\Models\User;
+use App\Support\AkademikStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -36,6 +37,7 @@ class SiswaController extends Controller
             $siswa = Siswa::create($validated['siswa']);
             $siswa->akademik()->create($validated['akademik']);
             $siswa->orangTua()->sync($validated['orang_tua_ids'] ?? []);
+            AkademikStatus::syncSiswa($siswa);
         });
 
         return redirect()->route('admin.siswa.index')->with('success', 'Siswa berhasil disimpan');
@@ -67,6 +69,7 @@ class SiswaController extends Controller
                 $validated['akademik']
             );
             $siswa->orangTua()->sync($validated['orang_tua_ids'] ?? []);
+            AkademikStatus::syncSiswa($siswa);
         });
 
         return redirect()->route('admin.siswa.index')->with('success', 'Siswa berhasil diperbarui');
@@ -126,7 +129,7 @@ class SiswaController extends Controller
                 'tingkat' => $validated['tingkat'],
                 'rombel_id' => $validated['rombel_id'],
                 'rayon_id' => $validated['rayon_id'],
-                'status' => $validated['status'] === 'aktif' ? 'aktif' : 'alumni',
+                'status' => 'naik',
             ],
             'orang_tua_ids' => $validated['orang_tua_ids'] ?? [],
         ];

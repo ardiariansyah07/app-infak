@@ -8,10 +8,13 @@
         <h2 class="fw-bold mb-1">Tagihan Infak</h2>
         <p class="text-muted mb-0">Tagihan bulanan dan status pelunasannya.</p>
     </div>
-    <a href="{{ route('admin.tagihan.create') }}" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i>
-        Tambah Tagihan
-    </a>
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
+        @include('components.import-actions', ['master' => 'tagihan-awal'])
+        <a href="{{ route('admin.tagihan.create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i>
+            Tambah Tagihan
+        </a>
+    </div>
 </div>
 
 <form action="{{ route('admin.tagihan.generate') }}" method="POST" class="card border-0 shadow-sm mb-4">
@@ -25,6 +28,11 @@
     </div>
 </form>
 
+<div class="alert alert-info">
+    Untuk data awal tahun ajaran lama, gunakan <strong>Template XLSX</strong> di kanan atas halaman ini.
+    Isi satu baris per siswa per bulan: nominal tagihan dan nominal yang sudah terbayar.
+</div>
+
 <div class="card border-0 shadow-sm">
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
@@ -32,17 +40,17 @@
             <tbody>
             @forelse($data as $tagihan)
                 <tr>
-                    <td>{{ $tagihan->periode }}</td>
+                    <td>{{ \App\Support\Periode::label($tagihan->periode) }}</td>
                     <td>{{ $tagihan->siswaAkademik?->siswa?->nama }}</td>
                     <td>{{ $tagihan->siswaAkademik?->rombel?->nama }}</td>
                     <td>{{ $tagihan->siswaAkademik?->rayon?->nama }}</td>
                     <td>Rp {{ number_format($tagihan->nominal, 0, ',', '.') }}</td>
-                    <td><span class="badge bg-{{ $tagihan->status === 'lunas' ? 'success' : ($tagihan->status === 'sebagian' ? 'warning' : 'secondary') }}">{{ $tagihan->status }}</span></td>
+                    <td><span class="badge bg-{{ $tagihan->status === 'lunas' ? 'success' : ($tagihan->status === 'sebagian' ? 'warning text-dark' : 'warning text-dark') }}">{{ $tagihan->status }}</span></td>
                     <td>
-                        <a href="{{ route('admin.tagihan.edit', $tagihan) }}" class="btn btn-sm btn-warning">Edit</a>
-                        <form action="{{ route('admin.tagihan.destroy', $tagihan) }}" method="POST" class="d-inline">
+                        <a href="{{ route('admin.tagihan.edit', $tagihan) }}" class="btn btn-sm btn-warning"><i class="bi bi-pencil-square"></i> Edit</a>
+                        <form action="{{ route('admin.tagihan.destroy', $tagihan) }}" method="POST" class="d-inline delete-form">
                             @csrf @method('DELETE')
-                            <button class="btn btn-sm btn-danger" onclick="return confirm('Hapus tagihan?')">Hapus</button>
+                            <button class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> Hapus</button>
                         </form>
                     </td>
                 </tr>

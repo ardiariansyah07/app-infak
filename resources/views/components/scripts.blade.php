@@ -164,6 +164,53 @@ document.querySelectorAll('[data-password-checklist]').forEach(checklist => {
 
 </script>
 
+<script>
+
+document
+.querySelectorAll('[data-select-filter]')
+.forEach(input => {
+
+    const select = document.getElementById(input.dataset.selectFilter);
+
+    if(!select){
+        return;
+    }
+
+    const options =
+        Array.from(select.options).map(option => ({
+            value: option.value,
+            text: option.text,
+        }));
+
+    input.addEventListener('input', () => {
+
+        const keyword =
+            input.value.toLowerCase().trim();
+
+        const selectedValue =
+            select.value;
+
+        select.innerHTML = '';
+
+        options
+            .filter(option => option.text.toLowerCase().includes(keyword))
+            .forEach(option => {
+                const element =
+                    new Option(option.text, option.value);
+
+                select.add(element);
+            });
+
+        if(Array.from(select.options).some(option => option.value === selectedValue)){
+            select.value = selectedValue;
+        }
+
+    });
+
+});
+
+</script>
+
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 @if(session('success'))
@@ -243,6 +290,82 @@ document
             if(result.isConfirmed){
 
                 form.submit();
+
+            }
+
+        });
+
+    });
+
+});
+
+</script>
+
+<script>
+
+document
+.querySelectorAll('.confirm-form')
+.forEach(form => {
+
+    form.addEventListener('submit', function(e){
+
+        e.preventDefault();
+
+        Swal.fire({
+
+            title: form.dataset.confirmTitle || 'Konfirmasi Aksi',
+
+            text: form.dataset.confirmText || 'Pastikan data sudah benar sebelum diproses.',
+
+            icon: form.dataset.confirmIcon || 'question',
+
+            showCancelButton:true,
+
+            confirmButtonText: form.dataset.confirmButton || 'Ya, Lanjutkan',
+
+            cancelButtonText:'Batal'
+
+        }).then((result)=>{
+
+            if(result.isConfirmed){
+
+                form.submit();
+
+            }
+
+        });
+
+    });
+
+});
+
+document
+.querySelectorAll('[data-logout-confirm]')
+.forEach(link => {
+
+    link.addEventListener('click', function(e){
+
+        e.preventDefault();
+
+        Swal.fire({
+
+            title:'Logout?',
+
+            text:'Anda akan keluar dari aplikasi.',
+
+            icon:'question',
+
+            showCancelButton:true,
+
+            confirmButtonText:'Ya, Logout',
+
+            cancelButtonText:'Batal'
+
+        }).then((result)=>{
+
+            if(result.isConfirmed){
+
+                document.getElementById('logout-form')?.submit();
 
             }
 

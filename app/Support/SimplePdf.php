@@ -48,6 +48,7 @@ class SimplePdf
     public function tableRow(array $columns, array $widths, bool $bold = false): void
     {
         $x = 40;
+        $height = 18;
 
         if ($this->y < 60) {
             $this->addPage();
@@ -55,18 +56,20 @@ class SimplePdf
 
         foreach ($columns as $index => $column) {
             $font = $bold ? 'F2' : 'F1';
+            $width = $widths[$index] ?? 80;
             $text = $this->fit((string) $column, $widths[$index] ?? 80);
+            $this->current[] = sprintf('%d %d %d %d re S', $x, $this->y - 5, $width, $height);
             $this->current[] = sprintf(
                 'BT /%s 9 Tf %d %d Td (%s) Tj ET',
                 $font,
-                $x,
+                $x + 4,
                 $this->y,
                 $this->escape($text)
             );
-            $x += $widths[$index] ?? 80;
+            $x += $width;
         }
 
-        $this->y -= 16;
+        $this->y -= $height;
     }
 
     public function space(int $height = 10): void

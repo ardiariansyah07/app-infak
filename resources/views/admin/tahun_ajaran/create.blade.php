@@ -139,24 +139,8 @@
 
             </div>
 
-            <div class="form-check form-switch mb-4">
-
-                <input
-                    class="form-check-input"
-                    type="checkbox"
-                    role="switch"
-                    id="aktif"
-                    name="aktif"
-                    value="1">
-
-                <label
-                    class="form-check-label"
-                    for="aktif">
-
-                    Jadikan Tahun Ajaran Aktif
-
-                </label>
-
+            <div class="alert alert-info mb-4">
+                Status aktif ditentukan otomatis berdasarkan tanggal mulai dan tanggal selesai.
             </div>
 
             <div class="d-flex gap-2">

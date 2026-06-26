@@ -21,7 +21,7 @@
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
-                <tr><th>NIS</th><th>Nama</th><th>Rombel Aktif</th><th>Rayon</th><th>Akun Login</th><th>Status</th><th width="140">Aksi</th></tr>
+                <tr><th>NIS</th><th>Nama</th><th>Rombel Aktif</th><th>Rayon</th><th>Akun Login</th><th>Status</th><th width="160">Aksi</th></tr>
             </thead>
             <tbody>
             @forelse($data as $siswa)
@@ -33,10 +33,10 @@
                     <td>{{ $siswa->user?->email ?? '-' }}</td>
                     <td><span class="badge bg-{{ $siswa->status === 'aktif' ? 'success' : 'secondary' }}">{{ $siswa->status }}</span></td>
                     <td>
-                        <a href="{{ route('admin.siswa.edit', $siswa) }}" class="btn btn-sm btn-warning">Edit</a>
-                        <form action="{{ route('admin.siswa.destroy', $siswa) }}" method="POST" class="d-inline">
+                        <a href="{{ route('admin.siswa.edit', $siswa) }}" class="btn btn-sm btn-warning"><i class="bi bi-pencil-square"></i> Edit</a>
+                        <form action="{{ route('admin.siswa.destroy', $siswa) }}" method="POST" class="d-inline delete-form">
                             @csrf @method('DELETE')
-                            <button class="btn btn-sm btn-danger" onclick="return confirm('Hapus siswa?')">Hapus</button>
+                            <button class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> Hapus</button>
                         </form>
                     </td>
                 </tr>

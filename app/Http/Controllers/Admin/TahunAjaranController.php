@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\TahunAjaran;
+use App\Support\TahunAjaranStatus;
 use Illuminate\Http\Request;
 
 class TahunAjaranController extends Controller
 {
     public function index()
     {
-        $data = TahunAjaran::latest()->get();
+        TahunAjaranStatus::syncToday();
+
+        $data = TahunAjaran::orderByDesc('tanggal_mulai')->get();
 
         return view(
             'admin.tahun_ajaran.index',
@@ -26,26 +29,18 @@ class TahunAjaranController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nama' => 'required',
-            'tanggal_mulai' => 'required',
-            'tanggal_selesai' => 'required',
+            'nama' => ['required', 'string', 'max:255'],
+            'tanggal_mulai' => ['required', 'date'],
+            'tanggal_selesai' => ['required', 'date', 'after_or_equal:tanggal_mulai'],
         ]);
-
-        if ($request->aktif) {
-
-            TahunAjaran::query()
-                ->update([
-                    'aktif' => 0,
-                ]);
-
-        }
 
         TahunAjaran::create([
             'nama' => $request->nama,
             'tanggal_mulai' => $request->tanggal_mulai,
             'tanggal_selesai' => $request->tanggal_selesai,
-            'aktif' => $request->aktif ? 1 : 0,
         ]);
+
+        TahunAjaranStatus::syncToday();
 
         return redirect()
             ->route('admin.tahun-ajaran.index')
@@ -64,14 +59,11 @@ class TahunAjaranController extends Controller
         Request $request,
         TahunAjaran $tahun_ajaran
     ) {
-        if ($request->aktif) {
-
-            TahunAjaran::query()
-                ->update([
-                    'aktif' => 0,
-                ]);
-
-        }
+        $request->validate([
+            'nama' => ['required', 'string', 'max:255'],
+            'tanggal_mulai' => ['required', 'date'],
+            'tanggal_selesai' => ['required', 'date', 'after_or_equal:tanggal_mulai'],
+        ]);
 
         $tahun_ajaran->update([
 
@@ -81,9 +73,9 @@ class TahunAjaranController extends Controller
 
             'tanggal_selesai' => $request->tanggal_selesai,
 
-            'aktif' => $request->aktif ? 1 : 0,
-
         ]);
+
+        TahunAjaranStatus::syncToday();
 
         return redirect()
             ->route('admin.tahun-ajaran.index')

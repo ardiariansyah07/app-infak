@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\KomitmenInfak;
 use App\Models\SiswaAkademik;
 use App\Models\TagihanInfak;
+use App\Support\MonthlyTagihanGenerator;
 use Illuminate\Http\Request;
 
 class TagihanInfakController extends Controller
@@ -87,26 +87,7 @@ class TagihanInfakController extends Controller
             'periode' => ['required', 'regex:/^\d{4}-\d{2}$/'],
         ]);
 
-        $created = 0;
-
-        KomitmenInfak::with('siswaAkademik')
-            ->whereHas('siswaAkademik', fn ($query) => $query->where('status', 'aktif'))
-            ->each(function (KomitmenInfak $komitmen) use ($validated, &$created) {
-                $tagihan = TagihanInfak::firstOrCreate(
-                    [
-                        'siswa_akademik_id' => $komitmen->siswa_akademik_id,
-                        'periode' => $validated['periode'],
-                    ],
-                    [
-                        'nominal' => $komitmen->nominal_bulanan,
-                        'status' => 'belum',
-                    ]
-                );
-
-                if ($tagihan->wasRecentlyCreated) {
-                    $created++;
-                }
-            });
+        $created = MonthlyTagihanGenerator::generate($validated['periode']);
 
         return redirect()->route('admin.tagihan.index')->with('success', $created.' tagihan berhasil dibuat');
     }

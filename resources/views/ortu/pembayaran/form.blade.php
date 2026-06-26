@@ -9,14 +9,22 @@
     @csrf
     <div class="card-body">
         <div class="row g-3">
-            <div class="col-md-6">
-                <label class="form-label">Anak</label>
-                <select name="siswa_id" class="form-select" required>
-                    @foreach($siswa as $item)
-                        <option value="{{ $item->id }}">{{ $item->nama }} - {{ $item->nis }}</option>
-                    @endforeach
-                </select>
-            </div>
+            @if($siswa->count() === 1)
+                <input type="hidden" name="siswa_id" value="{{ $siswa->first()->id }}">
+                <div class="col-md-6">
+                    <label class="form-label">Siswa</label>
+                    <input type="text" class="form-control" value="{{ $siswa->first()->nama }} - {{ $siswa->first()->nis }}" readonly>
+                </div>
+            @else
+                <div class="col-md-6">
+                    <label class="form-label">Anak</label>
+                    <select name="siswa_id" class="form-select" required>
+                        @foreach($siswa as $item)
+                            <option value="{{ $item->id }}">{{ $item->nama }} - {{ $item->nis }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @endif
             <div class="col-md-3">
                 <label class="form-label">Tanggal Bayar</label>
                 <input name="tanggal" type="date" class="form-control" value="{{ date('Y-m-d') }}" required>
@@ -26,13 +34,9 @@
                 <input name="nominal" type="number" min="1000" class="form-control" required>
             </div>
             <div class="col-md-12">
-                <label class="form-label">Bulan yang Dibayar</label>
-                <select name="tagihan_infak_ids[]" class="form-select" multiple required>
-                    @foreach($tagihan as $item)
-                        <option value="{{ $item->id }}">{{ $item->siswaAkademik?->siswa?->nama }} - {{ $item->periode }} - sisa Rp {{ number_format($item->sisa, 0, ',', '.') }}</option>
-                    @endforeach
-                </select>
-                <div class="form-text">Tekan Ctrl/Cmd untuk memilih lebih dari satu bulan.</div>
+                <div class="alert alert-info mb-0">
+                    Bulan yang dibayar ditentukan otomatis dari tagihan tertua. Jika nominal tidak pas, sistem mencatat bulan terakhir sebagai sebagian.
+                </div>
             </div>
             <div class="col-md-12">
                 <label class="form-label">Bukti Bayar</label>

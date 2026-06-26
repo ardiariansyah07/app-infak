@@ -8,10 +8,18 @@
         <h2 class="fw-bold mb-1">Laporan Infak</h2>
         <p class="text-muted mb-0">Ringkasan untuk administrasi sekolah dan bahan laporan kepada kepala sekolah.</p>
     </div>
-    <div class="d-flex gap-2">
-        <a href="{{ route('admin.laporan.pdf', ['periode' => $periode]) }}" class="btn btn-primary">
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
+        <a href="{{ route('admin.laporan.pdf', ['periode' => $periode, 'jenis' => 'ringkasan']) }}" class="btn btn-primary">
             <i class="bi bi-filetype-pdf"></i>
-            Generate PDF
+            PDF Ringkasan
+        </a>
+        <a href="{{ route('admin.laporan.pdf', ['periode' => $periode, 'jenis' => 'rayon']) }}" class="btn btn-outline-primary">
+            <i class="bi bi-filetype-pdf"></i>
+            PDF Rekap Rayon
+        </a>
+        <a href="{{ route('admin.laporan.pdf', ['periode' => $periode, 'jenis' => 'tunggakan']) }}" class="btn btn-outline-primary">
+            <i class="bi bi-filetype-pdf"></i>
+            PDF Tunggakan
         </a>
         <button class="btn btn-outline-secondary" onclick="window.print()">
             <i class="bi bi-printer"></i>
@@ -86,7 +94,7 @@
                         <tbody>
                         @forelse($statusTagihan as $status)
                             <tr>
-                                <td><span class="badge bg-secondary">{{ ucfirst($status->status) }}</span></td>
+                                <td><span class="badge bg-{{ $status->status === 'lunas' ? 'success' : 'warning text-dark' }}">{{ ucfirst($status->status) }}</span></td>
                                 <td>{{ $status->total }}</td>
                                 <td>Rp {{ number_format($status->nominal, 0, ',', '.') }}</td>
                             </tr>
@@ -156,7 +164,7 @@
                 <tbody>
                 @forelse($siswaMenunggak as $tagihan)
                     <tr>
-                        <td>{{ $tagihan->periode }}</td>
+                        <td>{{ \App\Support\Periode::label($tagihan->periode) }}</td>
                         <td>{{ $tagihan->siswaAkademik?->siswa?->nama }}</td>
                         <td>{{ $tagihan->siswaAkademik?->rombel?->nama }}</td>
                         <td>{{ $tagihan->siswaAkademik?->rayon?->nama }}</td>

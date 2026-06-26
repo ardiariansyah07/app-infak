@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\GuruController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\KomitmenInfakController;
 use App\Http\Controllers\Admin\LaporanController;
+use App\Http\Controllers\Admin\OrangTuaController;
 use App\Http\Controllers\Admin\RayonController as AdminRayonController;
 /*
 |--------------------------------------------------------------------------
@@ -21,6 +22,7 @@ use App\Http\Controllers\Ortu\DashboardController as OrtuDashboardController;
 use App\Http\Controllers\Ortu\KomitmenInfakController as OrtuKomitmenInfakController;
 use App\Http\Controllers\Ortu\PembayaranController as OrtuPembayaranController;
 use App\Http\Controllers\PembayaranController;
+use App\Http\Controllers\StatusPembayaranController;
 /*
 |--------------------------------------------------------------------------
 | Controller Role Lain
@@ -124,6 +126,10 @@ Route::prefix('admin')
 
         Route::resource('siswa', SiswaController::class)->except(['show']);
 
+        Route::resource('orang-tua', OrangTuaController::class)
+            ->except(['show'])
+            ->parameters(['orang-tua' => 'orangTua']);
+
         Route::resource('user', UserController::class)->except(['show']);
 
         Route::resource('komitmen-infak', KomitmenInfakController::class)
@@ -140,6 +146,12 @@ Route::prefix('admin')
 
         Route::patch('pembayaran/{pembayaran}/verify', [PembayaranController::class, 'verify'])
             ->name('pembayaran.verify');
+
+        Route::get('status-pembayaran', [StatusPembayaranController::class, 'index'])
+            ->name('status-pembayaran.index');
+
+        Route::get('status-pembayaran/{siswa}', [StatusPembayaranController::class, 'show'])
+            ->name('status-pembayaran.show');
 
         Route::get('laporan', [LaporanController::class, 'index'])
             ->name('laporan.index');
@@ -167,6 +179,16 @@ Route::prefix('petugas')
 
         Route::resource('pembayaran', PembayaranController::class)
             ->only(['index', 'create', 'store']);
+
+        Route::get('status-pembayaran', [StatusPembayaranController::class, 'index'])
+            ->name('status-pembayaran.index');
+
+        Route::get('status-pembayaran/{siswa}', [StatusPembayaranController::class, 'show'])
+            ->name('status-pembayaran.show');
+
+        Route::resource('komitmen-infak', KomitmenInfakController::class)
+            ->except(['show'])
+            ->parameters(['komitmen-infak' => 'komitmenInfak']);
 
         Route::patch('pembayaran/{pembayaran}/verify', [PembayaranController::class, 'verify'])
             ->name('pembayaran.verify');

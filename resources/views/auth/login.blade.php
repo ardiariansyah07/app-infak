@@ -12,9 +12,10 @@
 
             <div class="text-white p-5">
 
-                <div class="brand-mark mb-4">
+                <div class="brand-mark brand-left mb-4">
 
-                    <img src="{{ asset('images/logo-infak.png') }}" alt="Logo Infak">
+                    <img src="{{ asset('images/logo-infak.png') }}"
+                        alt="Logo Infak">
 
                 </div>
 
@@ -82,8 +83,11 @@
 
                 <div class="text-center mb-4">
 
-                    <div class="brand-mark text-white mb-3">
-                        <img src="{{ asset('images/logo-infak.png') }}" alt="Logo Infak">
+                    <div class="brand-mark brand-right text-white mb-3">
+
+                        <img src="{{ asset('images/logo-infak.png') }}"
+                            alt="Logo Infak">
+
                     </div>
 
                     <h3 class="fw-bold mt-3">

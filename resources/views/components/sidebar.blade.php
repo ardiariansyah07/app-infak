@@ -7,6 +7,15 @@
         'orang_tua' => 'ortu.dashboard',
         default => 'dashboard',
     };
+    $masterActive = request()->is('admin/tahun-ajaran*')
+        || request()->is('admin/guru*')
+        || request()->is('admin/rayon*')
+        || request()->is('admin/rombel*')
+        || request()->is('admin/siswa*');
+    $transaksiActive = request()->is('admin/komitmen-infak*')
+        || request()->is('admin/tagihan*')
+        || request()->is('admin/pembayaran*')
+        || request()->is('admin/status-pembayaran*');
 @endphp
 
 <div id="sidebar" class="sidebar">
@@ -30,12 +39,12 @@
     @if($role === 'admin')
         <div class="menu-group">MASTER DATA</div>
         <div class="sidebar-menu">
-            <a href="#" onclick="toggleMasterData(event)">
+            <a href="#" onclick="toggleMasterData(event)" class="{{ $masterActive ? 'active' : '' }}">
                 <i class="bi bi-folder2-open"></i>
                 <span class="menu-text">Master Data</span>
-                <span class="ms-auto menu-text"><i id="master-arrow" class="bi bi-chevron-right"></i></span>
+                <span class="ms-auto menu-text"><i id="master-arrow" class="bi {{ $masterActive ? 'bi-chevron-down' : 'bi-chevron-right' }}"></i></span>
             </a>
-            <div id="master-menu">
+            <div id="master-menu" style="{{ $masterActive ? 'display:block' : '' }}">
                 <a href="{{ route('admin.tahun-ajaran.index') }}" class="submenu {{ request()->is('admin/tahun-ajaran*') ? 'active' : '' }}">
                     <i class="bi bi-calendar-range"></i><span class="menu-text">Tahun Ajaran</span>
                 </a>
@@ -63,12 +72,12 @@
 
         <div class="menu-group">TRANSAKSI</div>
         <div class="sidebar-menu">
-            <a href="#" onclick="toggleTransaksi(event)">
+            <a href="#" onclick="toggleTransaksi(event)" class="{{ $transaksiActive ? 'active' : '' }}">
                 <i class="bi bi-cash-stack"></i>
                 <span class="menu-text">Transaksi</span>
-                <span class="ms-auto menu-text"><i id="transaksi-arrow" class="bi bi-chevron-right"></i></span>
+                <span class="ms-auto menu-text"><i id="transaksi-arrow" class="bi {{ $transaksiActive ? 'bi-chevron-down' : 'bi-chevron-right' }}"></i></span>
             </a>
-            <div id="transaksi-menu">
+            <div id="transaksi-menu" style="{{ $transaksiActive ? 'display:block' : '' }}">
                 <a href="{{ route('admin.komitmen-infak.index') }}" class="submenu {{ request()->is('admin/komitmen-infak*') ? 'active' : '' }}">
                     <i class="bi bi-clipboard-check"></i><span class="menu-text">Komitmen Infak</span>
                 </a>
@@ -77,6 +86,9 @@
                 </a>
                 <a href="{{ route('admin.pembayaran.index') }}" class="submenu {{ request()->is('admin/pembayaran*') ? 'active' : '' }}">
                     <i class="bi bi-credit-card"></i><span class="menu-text">Pembayaran</span>
+                </a>
+                <a href="{{ route('admin.status-pembayaran.index') }}" class="submenu {{ request()->is('admin/status-pembayaran*') ? 'active' : '' }}">
+                    <i class="bi bi-card-checklist"></i><span class="menu-text">Status Pembayaran</span>
                 </a>
             </div>
         </div>
@@ -92,8 +104,14 @@
     @if($role === 'petugas_infak')
         <div class="menu-group">TRANSAKSI</div>
         <div class="sidebar-menu">
+            <a href="{{ route('petugas.komitmen-infak.index') }}" class="{{ request()->is('petugas/komitmen-infak*') ? 'active' : '' }}">
+                <i class="bi bi-clipboard-check"></i><span class="menu-text">Komitmen Infak</span>
+            </a>
             <a href="{{ route('petugas.pembayaran.index') }}" class="{{ request()->is('petugas/pembayaran*') ? 'active' : '' }}">
                 <i class="bi bi-credit-card"></i><span class="menu-text">Pembayaran</span>
+            </a>
+            <a href="{{ route('petugas.status-pembayaran.index') }}" class="{{ request()->is('petugas/status-pembayaran*') ? 'active' : '' }}">
+                <i class="bi bi-card-checklist"></i><span class="menu-text">Status Pembayaran</span>
             </a>
         </div>
     @endif
@@ -124,7 +142,7 @@
 
     <div class="menu-group">AKUN</div>
     <div class="sidebar-menu">
-        <a href="#" onclick="event.preventDefault();document.getElementById('logout-form').submit();">
+        <a href="#" data-logout-confirm>
             <i class="bi bi-box-arrow-right"></i>
             <span class="menu-text">Logout</span>
         </a>

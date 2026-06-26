@@ -5,28 +5,46 @@
 @section('content')
 <h2 class="fw-bold mb-4">Nominal Infak Anak</h2>
 
-<form action="{{ route('ortu.komitmen.update') }}" method="POST" class="card border-0 shadow-sm mb-4">
-    @csrf @method('PUT')
-    <div class="card-body">
-        <div class="row g-3 align-items-end">
-            <div class="col-md-6">
-                <label class="form-label">Anak</label>
-                <select name="siswa_akademik_id" class="form-select" required>
-                    @foreach($siswaAkademik as $item)
-                        <option value="{{ $item->id }}">{{ $item->siswa?->nama }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Nominal Bulanan</label>
-                <input name="nominal_bulanan" type="number" min="1000" class="form-control" required>
-            </div>
-            <div class="col-md-2">
-                <button class="btn btn-primary w-100">Simpan</button>
+@php
+    $sudahMengisi = $isSiswaLogin && $data->isNotEmpty();
+@endphp
+
+@if($sudahMengisi)
+    <div class="alert alert-info">
+        Nominal infak sudah diisi dan tidak bisa diedit dari login siswa. Hubungi petugas infak atau admin jika perlu perubahan.
+    </div>
+@else
+    <form action="{{ route('ortu.komitmen.update') }}" method="POST" class="card border-0 shadow-sm mb-4">
+        @csrf @method('PUT')
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                @if($siswaAkademik->count() === 1)
+                    <input type="hidden" name="siswa_akademik_id" value="{{ $siswaAkademik->first()->id }}">
+                    <div class="col-md-6">
+                        <label class="form-label">Siswa</label>
+                        <input type="text" class="form-control" value="{{ $siswaAkademik->first()->siswa?->nama }}" readonly>
+                    </div>
+                @else
+                    <div class="col-md-6">
+                        <label class="form-label">Anak</label>
+                        <select name="siswa_akademik_id" class="form-select" required>
+                            @foreach($siswaAkademik as $item)
+                                <option value="{{ $item->id }}">{{ $item->siswa?->nama }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
+                <div class="col-md-4">
+                    <label class="form-label">Nominal Bulanan</label>
+                    <input name="nominal_bulanan" type="number" min="1000" class="form-control" required>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100">Simpan</button>
+                </div>
             </div>
         </div>
-    </div>
-</form>
+    </form>
+@endif
 
 <div class="card border-0 shadow-sm">
     <div class="table-responsive">

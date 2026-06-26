@@ -3,6 +3,8 @@
 @section('title','Riwayat Pembayaran')
 
 @section('content')
+@php use App\Support\Periode; @endphp
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2 class="fw-bold mb-1">Riwayat Pembayaran</h2>
@@ -21,7 +23,7 @@
                     <td>{{ $pembayaran->tanggal?->format('d/m/Y') }}</td>
                     <td>{{ $pembayaran->siswa?->nama }}</td>
                     <td>Rp {{ number_format($pembayaran->nominal, 0, ',', '.') }}</td>
-                    <td>{{ $pembayaran->tagihanInfak->pluck('periode')->join(', ') }}</td>
+                    <td>{{ Periode::labels($pembayaran->tagihanInfak) }}</td>
                     <td><span class="badge bg-{{ $pembayaran->status_verifikasi === 'valid' ? 'success' : ($pembayaran->status_verifikasi === 'ditolak' ? 'danger' : 'warning') }}">{{ $pembayaran->status_verifikasi }}</span></td>
                     <td><a href="{{ asset('storage/' . $pembayaran->bukti_transfer) }}" target="_blank">Lihat</a></td>
                 </tr>
@@ -31,5 +33,9 @@
             </tbody>
         </table>
     </div>
+</div>
+
+<div class="mt-4">
+    @include('components.payment-card', ['tagihan' => $tagihanBulanan, 'title' => 'Kartu Bayaran'])
 </div>
 @endsection

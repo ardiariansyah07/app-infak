@@ -7,14 +7,34 @@ use ZipArchive;
 
 class SimpleXlsx
 {
-    public static function template(array $headers, string $sheetName = 'Template'): string
+    private const SPREADSHEET_NAMESPACE = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+
+    public static function template(array $headers, string $sheetName = 'Template', array $examples = []): string
     {
         $sharedStrings = '';
-        $cells = '';
+        $rows = '';
+        $stringIndex = 0;
 
         foreach (array_values($headers) as $index => $header) {
             $sharedStrings .= '<si><t>'.self::escape($header).'</t></si>';
-            $cells .= '<c r="'.self::column($index + 1).'1" t="s"><v>'.$index.'</v></c>';
+            $rows .= '<c r="'.self::column($index + 1).'1" t="s"><v>'.$stringIndex.'</v></c>';
+            $stringIndex++;
+        }
+
+        $sheetRows = '<row r="1">'.$rows.'</row>';
+
+        foreach (array_values($examples) as $rowIndex => $example) {
+            $cells = '';
+            $excelRow = $rowIndex + 2;
+
+            foreach (array_values($headers) as $columnIndex => $header) {
+                $value = (string) ($example[$header] ?? '');
+                $sharedStrings .= '<si><t>'.self::escape($value).'</t></si>';
+                $cells .= '<c r="'.self::column($columnIndex + 1).$excelRow.'" t="s"><v>'.$stringIndex.'</v></c>';
+                $stringIndex++;
+            }
+
+            $sheetRows .= '<row r="'.$excelRow.'">'.$cells.'</row>';
         }
 
         $zipPath = tempnam(sys_get_temp_dir(), 'xlsx_');
@@ -28,9 +48,9 @@ class SimpleXlsx
         $zip->addFromString('_rels/.rels', self::rootRels());
         $zip->addFromString('xl/workbook.xml', self::workbook($sheetName));
         $zip->addFromString('xl/_rels/workbook.xml.rels', self::workbookRels());
-        $zip->addFromString('xl/sharedStrings.xml', '<?xml version="1.0" encoding="UTF-8"?><sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="'.count($headers).'" uniqueCount="'.count($headers).'">'.$sharedStrings.'</sst>');
+        $zip->addFromString('xl/sharedStrings.xml', '<?xml version="1.0" encoding="UTF-8"?><sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="'.$stringIndex.'" uniqueCount="'.$stringIndex.'">'.$sharedStrings.'</sst>');
         $zip->addFromString('xl/styles.xml', self::styles());
-        $zip->addFromString('xl/worksheets/sheet1.xml', '<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1">'.$cells.'</row></sheetData></worksheet>');
+        $zip->addFromString('xl/worksheets/sheet1.xml', '<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'.$sheetRows.'</sheetData></worksheet>');
         $zip->close();
 
         return $zipPath;
@@ -53,20 +73,37 @@ class SimpleXlsx
         }
 
         $xml = simplexml_load_string($sheet);
-        $xml->registerXPathNamespace('m', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
+
+        if (! $xml) {
+            throw new RuntimeException('Sheet pertama tidak valid.');
+        }
 
         $rows = [];
 
-        foreach ($xml->xpath('//m:sheetData/m:row') as $row) {
+        foreach ($xml->children(self::SPREADSHEET_NAMESPACE)->sheetData->row ?? [] as $row) {
             $values = [];
 
-            foreach ($row->xpath('m:c') as $cell) {
-                $ref = (string) $cell['r'];
-                $columnIndex = self::columnIndex(preg_replace('/\d+/', '', $ref));
-                $value = (string) ($cell->v ?? '');
+            foreach ($row->children(self::SPREADSHEET_NAMESPACE) as $cell) {
+                if ($cell->getName() !== 'c') {
+                    continue;
+                }
 
-                if ((string) $cell['t'] === 's') {
+                $attributes = $cell->attributes();
+                $ref = (string) ($attributes['r'] ?? '');
+
+                if ($ref === '') {
+                    continue;
+                }
+
+                $columnIndex = self::columnIndex(preg_replace('/\d+/', '', $ref));
+                $cellChildren = $cell->children(self::SPREADSHEET_NAMESPACE);
+                $value = (string) ($cellChildren->v ?? '');
+                $type = (string) ($attributes['t'] ?? '');
+
+                if ($type === 's') {
                     $value = $shared[(int) $value] ?? '';
+                } elseif ($type === 'inlineStr') {
+                    $value = (string) ($cellChildren->is->t ?? '');
                 }
 
                 $values[$columnIndex] = trim($value);
@@ -92,10 +129,21 @@ class SimpleXlsx
         $xml = simplexml_load_string($content);
         $xml->registerXPathNamespace('m', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
 
-        return array_map(
-            fn ($item) => (string) $item->t,
-            $xml->xpath('//m:si') ?: []
-        );
+        return array_map(function ($item) {
+            $children = $item->children(self::SPREADSHEET_NAMESPACE);
+
+            if (isset($children->t)) {
+                return (string) $children->t;
+            }
+
+            $parts = [];
+
+            foreach ($children->r ?? [] as $run) {
+                $parts[] = (string) ($run->children(self::SPREADSHEET_NAMESPACE)->t ?? '');
+            }
+
+            return implode('', $parts);
+        }, $xml->xpath('//m:si') ?: []);
     }
 
     private static function column(int $index): string

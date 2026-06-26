@@ -23,10 +23,10 @@
                     <td>{{ $orangTua->user?->email ?? '-' }}</td>
                     <td>{{ $orangTua->siswa->pluck('nama')->join(', ') ?: '-' }}</td>
                     <td>
-                        <a href="{{ route('admin.orang-tua.edit', $orangTua) }}" class="btn btn-sm btn-warning">Edit</a>
-                        <form action="{{ route('admin.orang-tua.destroy', $orangTua) }}" method="POST" class="d-inline">
+                        <a href="{{ route('admin.orang-tua.edit', $orangTua) }}" class="btn btn-sm btn-warning"><i class="bi bi-pencil-square"></i> Edit</a>
+                        <form action="{{ route('admin.orang-tua.destroy', $orangTua) }}" method="POST" class="d-inline delete-form">
                             @csrf @method('DELETE')
-                            <button class="btn btn-sm btn-danger" onclick="return confirm('Hapus orang tua?')">Hapus</button>
+                            <button class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> Hapus</button>
                         </form>
                     </td>
                 </tr>
