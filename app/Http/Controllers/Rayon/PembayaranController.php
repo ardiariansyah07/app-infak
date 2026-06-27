@@ -29,9 +29,14 @@ class PembayaranController extends Controller
     {
         $siswaIds = $this->siswaIds();
 
+        if (! Auth::user()->guru) {
+            return redirect()->route('rayon.pembayaran.index')
+                ->with('error', 'Akun pembimbing belum terhubung ke data guru. Hubungi admin untuk menghubungkan akun dengan guru pembimbing rayon.');
+        }
+
         return view('rayon.pembayaran.form', [
             'siswa' => Siswa::with('akademikAktif.rombel', 'akademikAktif.rayon')
-                ->whereIn('id', $siswaIds)
+                ->whereIn('siswa.id', $siswaIds)
                 ->leftJoin('siswa_akademik as akademik_aktif', function ($join) {
                     $join->on('akademik_aktif.siswa_id', '=', 'siswa.id')
                         ->where('akademik_aktif.status', 'aktif');
@@ -63,6 +68,8 @@ class PembayaranController extends Controller
                 'tanggal' => $validated['tanggal'],
                 'nominal' => $validated['nominal'],
                 'bukti_transfer' => $path,
+                'sumber' => Pembayaran::SUMBER_PEMBIMBING,
+                'metode_pembayaran' => Pembayaran::METODE_TRANSFER,
                 'status_verifikasi' => 'pending',
             ]);
 

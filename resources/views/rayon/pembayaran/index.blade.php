@@ -35,7 +35,7 @@
                         </span>
                     </td>
                     <td>
-                        @if($pembayaran->bukti_transfer)
+                        @if($pembayaran->punyaBuktiUnggahan())
                             <a href="{{ asset('storage/' . $pembayaran->bukti_transfer) }}" target="_blank" rel="noopener noreferrer">Lihat</a>
                         @else
                             -

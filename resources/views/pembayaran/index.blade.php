@@ -19,17 +19,19 @@
 <div class="card border-0 shadow-sm">
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
-            <thead class="table-light"><tr><th>Tanggal</th><th>Siswa</th><th>Nominal</th><th>Bulan Dibayar</th><th>Status</th><th>Bukti</th><th width="220">Aksi</th></tr></thead>
+            <thead class="table-light"><tr><th>Tanggal</th><th>Siswa</th><th>Nominal</th><th>Metode</th><th>Bulan Dibayar</th><th>Sumber</th><th>Status</th><th>Bukti</th><th width="220">Aksi</th></tr></thead>
             <tbody>
             @forelse($data as $pembayaran)
                 <tr>
                     <td>{{ $pembayaran->tanggal?->format('d/m/Y') }}</td>
                     <td>{{ $pembayaran->siswa ? $pembayaran->siswa->nis.' - '.$pembayaran->siswa->nama : '-' }}</td>
                     <td>Rp {{ number_format($pembayaran->nominal, 0, ',', '.') }}</td>
+                    <td>{{ $pembayaran->labelMetodePembayaran() }}</td>
                     <td>{{ Periode::labels($pembayaran->tagihanInfak) }}</td>
+                    <td>{{ $pembayaran->labelSumber() }}</td>
                     <td><span class="badge bg-{{ $pembayaran->status_verifikasi === 'valid' ? 'success' : ($pembayaran->status_verifikasi === 'ditolak' ? 'danger' : 'warning') }}">{{ $pembayaran->status_verifikasi }}</span></td>
                     <td>
-                        @if($pembayaran->bukti_transfer)
+                        @if($pembayaran->punyaBuktiUnggahan())
                             <a href="{{ asset('storage/' . $pembayaran->bukti_transfer) }}" target="_blank" rel="noopener noreferrer">Lihat</a>
                         @else
                             -
@@ -53,7 +55,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="7" class="text-center py-4 text-muted">Belum ada pembayaran.</td></tr>
+                <tr><td colspan="9" class="text-center py-4 text-muted">Belum ada pembayaran.</td></tr>
             @endforelse
             </tbody>
         </table>

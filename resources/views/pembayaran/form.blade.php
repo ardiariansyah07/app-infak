@@ -17,17 +17,25 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label">Tanggal</label>
-                <input name="tanggal" type="date" class="form-control" value="{{ date('Y-m-d') }}" required>
+                <input name="tanggal" type="date" class="form-control @error('tanggal') is-invalid @enderror" value="{{ old('tanggal', date('Y-m-d')) }}" required>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label">Nominal</label>
-                <input name="nominal" type="number" min="1000" class="form-control" required>
+                <input name="nominal" type="number" min="1000" class="form-control @error('nominal') is-invalid @enderror" value="{{ old('nominal') }}" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Metode Pembayaran</label>
+                <select name="metode_pembayaran" class="form-select @error('metode_pembayaran') is-invalid @enderror" required>
+                    <option value="">Pilih...</option>
+                    <option value="cash" @selected(old('metode_pembayaran') === 'cash')>Cash</option>
+                    <option value="transfer" @selected(old('metode_pembayaran') === 'transfer')>Transfer</option>
+                </select>
             </div>
             <div class="col-md-12">
                 <div class="alert alert-info mb-0">
-                    Alokasi tagihan otomatis dari periode tertua siswa yang dipilih. Pembayaran sebagian akan tercatat sebagai sisa tagihan.
+                    Pilih Cash untuk pembayaran tunai, atau Transfer jika siswa/orang tua menunjukkan bukti transfer kepada admin/petugas. Alokasi tagihan dilakukan otomatis dari periode tertua.
                 </div>
             </div>
         </div>

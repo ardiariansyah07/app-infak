@@ -48,17 +48,22 @@ class PembayaranController extends Controller
             'siswa_id' => ['required', 'exists:siswa,id'],
             'tanggal' => ['required', 'date'],
             'nominal' => ['required', 'integer', 'min:1000'],
+            'metode_pembayaran' => ['required', 'in:cash,transfer'],
             'tagihan_infak_ids' => ['array'],
             'tagihan_infak_ids.*' => ['exists:tagihan_infak,id'],
         ]);
 
         $this->ensureRequestedTagihanBelongToSiswa($validated['tagihan_infak_ids'] ?? [], (int) $validated['siswa_id']);
 
-        DB::transaction(function () use ($validated) {
+        $sumber = $request->user()->isAdmin() ? Pembayaran::SUMBER_ADMIN : Pembayaran::SUMBER_PETUGAS;
+
+        DB::transaction(function () use ($validated, $sumber) {
             $pembayaran = Pembayaran::create([
                 'siswa_id' => $validated['siswa_id'],
                 'tanggal' => $validated['tanggal'],
                 'nominal' => $validated['nominal'],
+                'sumber' => $sumber,
+                'metode_pembayaran' => $validated['metode_pembayaran'],
                 'status_verifikasi' => 'valid',
             ]);
 

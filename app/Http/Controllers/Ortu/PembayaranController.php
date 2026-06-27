@@ -61,6 +61,8 @@ class PembayaranController extends Controller
                 'tanggal' => $validated['tanggal'],
                 'nominal' => $validated['nominal'],
                 'bukti_transfer' => $path,
+                'sumber' => Pembayaran::SUMBER_ORANG_TUA,
+                'metode_pembayaran' => Pembayaran::METODE_TRANSFER,
                 'status_verifikasi' => 'pending',
             ]);
 

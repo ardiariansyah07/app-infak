@@ -7,8 +7,8 @@ use App\Models\Pembayaran;
 use App\Models\Rayon;
 use App\Models\SiswaAkademik;
 use App\Models\TagihanInfak;
-use App\Support\SimplePdf;
 use App\Support\Periode;
+use App\Support\SimplePdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,11 +26,12 @@ class LaporanController extends Controller
     {
         $data = $this->reportData($request);
         $jenis = $request->string('jenis', 'ringkasan')->toString();
-        abort_unless(in_array($jenis, ['ringkasan', 'rayon', 'tunggakan', 'tunggakan-rayon'], true), 404);
+        abort_unless(in_array($jenis, ['ringkasan', 'rayon', 'detail-rayon', 'tunggakan', 'tunggakan-rayon'], true), 404);
 
         $titles = [
             'ringkasan' => 'Laporan Ringkasan Infak Sekolah',
             'rayon' => 'Laporan Rekap Infak Per Rayon',
+            'detail-rayon' => 'Laporan Infak Siswa Per Rayon',
             'tunggakan' => 'Laporan Tagihan Belum Lunas',
             'tunggakan-rayon' => 'Laporan Tunggakan Siswa Per Rayon',
         ];
@@ -39,6 +40,11 @@ class LaporanController extends Controller
 
         $pdf->heading($titles[$jenis]);
         $pdf->line('Periode: '.($data['periode'] !== '' ? Periode::label($data['periode']) : 'Semua periode'));
+        if ($jenis === 'detail-rayon') {
+            abort_unless($data['selectedRayon'], 422, 'Pilih rayon yang akan dicetak.');
+            $pdf->line('Rayon: '.$data['selectedRayon']->nama);
+            $pdf->line('Pembimbing: '.($data['selectedRayon']->guru?->nama ?? '-'));
+        }
         $pdf->line('Tanggal cetak: '.now()->format('d/m/Y H:i'));
         $pdf->space();
 
@@ -69,6 +75,21 @@ class LaporanController extends Controller
                     $this->rupiah($rayon['pembayaran']),
                     $this->rupiah($rayon['tunggakan']),
                 ], [80, 110, 45, 85, 85, 85]);
+            }
+        }
+
+        if ($jenis === 'detail-rayon') {
+            $pdf->subheading('Data Siswa '.$data['selectedRayon']->nama);
+            $pdf->tableRow(['NIS', 'Siswa', 'Rombel', 'Tagihan', 'Terbayar', 'Tunggakan'], [65, 130, 80, 90, 90, 90], true);
+            foreach ($data['siswaRayon'] as $siswa) {
+                $pdf->tableRow([
+                    $siswa['nis'],
+                    $siswa['nama'],
+                    $siswa['rombel'],
+                    $this->rupiah($siswa['tagihan']),
+                    $this->rupiah($siswa['pembayaran']),
+                    $this->rupiah($siswa['tunggakan']),
+                ], [65, 130, 80, 90, 90, 90]);
             }
         }
 
@@ -103,7 +124,8 @@ class LaporanController extends Controller
             }
         }
 
-        $filename = 'laporan-infak-'.$jenis.($data['periode'] !== '' ? '-'.$data['periode'] : '').'.pdf';
+        $rayonSuffix = $data['selectedRayon'] ? '-rayon-'.$data['selectedRayon']->id : '';
+        $filename = 'laporan-infak-'.$jenis.$rayonSuffix.($data['periode'] !== '' ? '-'.$data['periode'] : '').'.pdf';
 
         return response($pdf->output(), 200, [
             'Content-Type' => 'application/pdf',
@@ -114,6 +136,9 @@ class LaporanController extends Controller
     private function reportData(Request $request): array
     {
         $periode = $request->string('periode')->toString();
+        $rayonId = $request->integer('rayon_id') ?: null;
+        $rayons = Rayon::orderBy('nama')->get();
+        $selectedRayon = $rayonId ? Rayon::with('guru')->findOrFail($rayonId) : null;
 
         $tagihanQuery = TagihanInfak::query();
         $pembayaranQuery = Pembayaran::query();
@@ -203,8 +228,56 @@ class LaporanController extends Controller
             ->get();
         $totalTunggakanPerRayon = $tunggakanPerRayon->sum('nominal_tunggakan');
 
+        $siswaRayon = collect();
+        if ($selectedRayon) {
+            $anggota = SiswaAkademik::with('siswa', 'rombel')
+                ->where('rayon_id', $selectedRayon->id)
+                ->where('status', 'aktif')
+                ->whereHas('siswa', fn ($query) => $query->where('status', 'aktif'))
+                ->orderBy('siswa_id')
+                ->get();
+            $siswaIds = $anggota->pluck('siswa_id')->unique()->values();
+
+            $tagihanPerSiswa = TagihanInfak::query()
+                ->join('siswa_akademik', 'siswa_akademik.id', '=', 'tagihan_infak.siswa_akademik_id')
+                ->whereIn('siswa_akademik.siswa_id', $siswaIds)
+                ->when($periode !== '', fn ($query) => $query->where('tagihan_infak.periode', $periode))
+                ->groupBy('siswa_akademik.siswa_id')
+                ->selectRaw('siswa_akademik.siswa_id, SUM(tagihan_infak.nominal) as total')
+                ->pluck('total', 'siswa_akademik.siswa_id');
+
+            $pembayaranPerSiswa = Pembayaran::query()
+                ->whereIn('siswa_id', $siswaIds)
+                ->where('status_verifikasi', 'valid')
+                ->when($periode !== '', function ($query) use ($periode) {
+                    $query->whereYear('tanggal', substr($periode, 0, 4))
+                        ->whereMonth('tanggal', substr($periode, 5, 2));
+                })
+                ->groupBy('siswa_id')
+                ->selectRaw('siswa_id, SUM(nominal) as total')
+                ->pluck('total', 'siswa_id');
+
+            $siswaRayon = $anggota->sortBy(fn ($akademik) => $akademik->siswa?->nis)->map(function ($akademik) use ($tagihanPerSiswa, $pembayaranPerSiswa) {
+                $tagihan = (int) ($tagihanPerSiswa[$akademik->siswa_id] ?? 0);
+                $pembayaran = (int) ($pembayaranPerSiswa[$akademik->siswa_id] ?? 0);
+
+                return [
+                    'nis' => $akademik->siswa?->nis ?? '-',
+                    'nama' => $akademik->siswa?->nama ?? '-',
+                    'rombel' => $akademik->rombel?->nama ?? '-',
+                    'tagihan' => $tagihan,
+                    'pembayaran' => $pembayaran,
+                    'tunggakan' => max(0, $tagihan - $pembayaran),
+                ];
+            })->values();
+        }
+
         return compact(
             'periode',
+            'rayonId',
+            'rayons',
+            'selectedRayon',
+            'siswaRayon',
             'totalTagihan',
             'pembayaranValid',
             'pembayaranPending',

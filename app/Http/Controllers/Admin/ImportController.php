@@ -9,7 +9,6 @@ use App\Models\Pembayaran;
 use App\Models\Rayon;
 use App\Models\Rombel;
 use App\Models\Siswa;
-use App\Models\TagihanInfak;
 use App\Models\TahunAjaran;
 use App\Models\User;
 use App\Support\AkademikStatus;
@@ -18,8 +17,8 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Throwable;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Throwable;
 
 class ImportController extends Controller
 {
@@ -731,7 +730,7 @@ class ImportController extends Controller
         $existingImportPaymentIds = DB::table('alokasi_pembayaran')
             ->join('pembayaran', 'pembayaran.id', '=', 'alokasi_pembayaran.pembayaran_id')
             ->whereIn('alokasi_pembayaran.tagihan_infak_id', $ids)
-            ->where('pembayaran.bukti_transfer', $source)
+            ->where('pembayaran.sumber', str_replace('-', '_', $source))
             ->pluck('pembayaran.id')
             ->unique()
             ->values();
@@ -769,7 +768,8 @@ class ImportController extends Controller
                 'siswa_id' => $group['siswa_id'],
                 'tanggal' => $group['tanggal'],
                 'nominal' => $group['nominal'],
-                'bukti_transfer' => $source,
+                'sumber' => str_replace('-', '_', $source),
+                'metode_pembayaran' => Pembayaran::METODE_SALDO_AWAL,
                 'status_verifikasi' => 'valid',
             ]);
 

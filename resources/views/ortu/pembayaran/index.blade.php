@@ -25,7 +25,13 @@
                     <td>Rp {{ number_format($pembayaran->nominal, 0, ',', '.') }}</td>
                     <td>{{ Periode::labels($pembayaran->tagihanInfak) }}</td>
                     <td><span class="badge bg-{{ $pembayaran->status_verifikasi === 'valid' ? 'success' : ($pembayaran->status_verifikasi === 'ditolak' ? 'danger' : 'warning') }}">{{ $pembayaran->status_verifikasi }}</span></td>
-                    <td><a href="{{ asset('storage/' . $pembayaran->bukti_transfer) }}" target="_blank" rel="noopener noreferrer">Lihat</a></td>
+                    <td>
+                        @if($pembayaran->punyaBuktiUnggahan())
+                            <a href="{{ asset('storage/' . $pembayaran->bukti_transfer) }}" target="_blank" rel="noopener noreferrer">Lihat</a>
+                        @else
+                            -
+                        @endif
+                    </td>
                 </tr>
             @empty
                 <tr><td colspan="6" class="text-center py-4 text-muted">Belum ada pembayaran.</td></tr>

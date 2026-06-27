@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Guru;
+use App\Models\Pembayaran;
 use App\Models\Rayon;
 use App\Models\Rombel;
 use App\Models\Siswa;
@@ -58,6 +59,7 @@ class PaymentSecurityTest extends TestCase
                 'siswa_id' => $siswaA->id,
                 'tanggal' => '2026-07-10',
                 'nominal' => 50000,
+                'metode_pembayaran' => Pembayaran::METODE_CASH,
                 'tagihan_infak_ids' => [$tagihanB->id],
             ])
             ->assertForbidden();

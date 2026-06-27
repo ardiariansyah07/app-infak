@@ -38,13 +38,61 @@
             <label class="form-label">Filter Periode</label>
             <input type="month" name="periode" value="{{ $periode }}" class="form-control">
         </div>
+        <div>
+            <label class="form-label">Rayon untuk Laporan Siswa</label>
+            <select name="rayon_id" class="form-select" data-searchable-select data-placeholder="Pilih rayon...">
+                <option value="">Pilih rayon...</option>
+                @foreach($rayons as $rayon)
+                    <option value="{{ $rayon->id }}" @selected($rayonId === $rayon->id)>{{ $rayon->nama }}</option>
+                @endforeach
+            </select>
+        </div>
         <button class="btn btn-primary">
             <i class="bi bi-funnel"></i>
             Terapkan
         </button>
         <a href="{{ route('admin.laporan.index') }}" class="btn btn-light border">Reset</a>
+        @if($selectedRayon)
+            <a href="{{ route('admin.laporan.pdf', ['periode' => $periode, 'rayon_id' => $selectedRayon->id, 'jenis' => 'detail-rayon']) }}" class="btn btn-success">
+                <i class="bi bi-filetype-pdf"></i>
+                PDF Siswa {{ $selectedRayon->nama }}
+            </a>
+        @endif
     </div>
 </form>
+
+@if($selectedRayon)
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+            <div>
+                <h5 class="fw-bold mb-1">Data Siswa {{ $selectedRayon->nama }}</h5>
+                <p class="text-muted mb-0">Pembimbing: {{ $selectedRayon->guru?->nama ?? '-' }}</p>
+            </div>
+            <span class="badge bg-primary">{{ $siswaRayon->count() }} siswa aktif</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light"><tr><th>NIS</th><th>Siswa</th><th>Rombel</th><th>Tagihan</th><th>Terbayar</th><th>Tunggakan</th></tr></thead>
+                <tbody>
+                @forelse($siswaRayon as $siswa)
+                    <tr>
+                        <td>{{ $siswa['nis'] }}</td>
+                        <td>{{ $siswa['nama'] }}</td>
+                        <td>{{ $siswa['rombel'] }}</td>
+                        <td>Rp {{ number_format($siswa['tagihan'], 0, ',', '.') }}</td>
+                        <td>Rp {{ number_format($siswa['pembayaran'], 0, ',', '.') }}</td>
+                        <td>Rp {{ number_format($siswa['tunggakan'], 0, ',', '.') }}</td>
+                    </tr>
+                @empty
+                    <tr><td colspan="6" class="text-center text-muted py-4">Belum ada siswa aktif di rayon ini.</td></tr>
+                @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+@endif
 
 <div class="row g-3 mb-4">
     <div class="col-md-3">
