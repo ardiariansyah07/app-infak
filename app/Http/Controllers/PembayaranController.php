@@ -14,9 +14,13 @@ class PembayaranController extends Controller
 {
     public function index(Request $request)
     {
+        $search = $request->string('q')->trim()->toString();
+
         $data = Pembayaran::with('siswa.akademikAktif.rombel', 'siswa.akademikAktif.rayon', 'tagihanInfak')
+            ->search($search)
             ->latest()
-            ->paginate(100);
+            ->paginate(100)
+            ->withQueryString();
 
         return view('pembayaran.index', [
             'data' => $data,

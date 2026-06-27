@@ -516,10 +516,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 table.closest('.card');
 
             const hasServerPagination =
-                Boolean(card?.querySelector('.pagination'));
+                table.dataset.serverPaginated === 'true';
 
             const rowOffset =
                 Number.parseInt(table.dataset.rowOffset || '0', 10) || 0;
+
+            const totalRows =
+                Number.parseInt(table.dataset.total || '0', 10) || 0;
 
             card?.classList.add('table-card');
 
@@ -607,7 +610,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const dataRows =
                 originalRows.filter(item => ! item.empty);
 
-            if(dataRows.length === 0){
+            if(dataRows.length === 0 && ! hasServerPagination){
                 return;
             }
 
@@ -666,6 +669,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const searchInput =
                 searchGroup.querySelector('input');
 
+            if(hasServerPagination){
+                searchInput.value =
+                    new URL(window.location.href).searchParams.get('q') || '';
+            }
+
             const emptySearchRow =
                 document.createElement('tr');
 
@@ -680,29 +688,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const render = () => {
 
+                if(hasServerPagination){
+                    originalRows.forEach(item => {
+                        item.row.hidden = false;
+                    });
+
+                    emptySearchRow.hidden = true;
+
+                    const firstShown = dataRows.length === 0 ? 0 : rowOffset + 1;
+                    const lastShown = rowOffset + dataRows.length;
+
+                    info.textContent =
+                        `Menampilkan ${firstShown}-${lastShown} dari ${totalRows || dataRows.length} data`;
+
+                    return;
+                }
+
                 const keyword =
                     searchInput.value.toLowerCase().trim();
 
                 filteredRows =
                     dataRows.filter(item => item.searchText.includes(keyword));
-
-                if(hasServerPagination){
-                    originalRows.forEach(item => {
-                        item.row.hidden = true;
-                    });
-
-                    filteredRows.forEach(item => {
-                        item.row.hidden = false;
-                    });
-
-                    emptySearchRow.hidden =
-                        filteredRows.length > 0;
-
-                    info.textContent =
-                        `Menampilkan ${filteredRows.length} dari ${dataRows.length} data pada halaman ini`;
-
-                    return;
-                }
 
                 const totalPages =
                     Math.max(1, Math.ceil(filteredRows.length / pageSize));
@@ -779,10 +785,43 @@ document.addEventListener('DOMContentLoaded', () => {
                 pagination.append(previousButton, pageLabel, nextButton);
             };
 
-            searchInput.addEventListener('input', () => {
-                currentPage = 1;
-                render();
-            });
+            if(hasServerPagination){
+                let searchTimer;
+
+                const submitSearch = () => {
+                    const url = new URL(window.location.href);
+                    const keyword = searchInput.value.trim();
+
+                    if(keyword){
+                        url.searchParams.set('q', keyword);
+                    }else{
+                        url.searchParams.delete('q');
+                    }
+
+                    url.searchParams.delete('page');
+                    window.location.assign(url.toString());
+                };
+
+                searchInput.addEventListener('input', () => {
+                    window.clearTimeout(searchTimer);
+                    searchTimer = window.setTimeout(submitSearch, 450);
+                });
+
+                searchInput.addEventListener('keydown', event => {
+                    if(event.key !== 'Enter'){
+                        return;
+                    }
+
+                    event.preventDefault();
+                    window.clearTimeout(searchTimer);
+                    submitSearch();
+                });
+            }else{
+                searchInput.addEventListener('input', () => {
+                    currentPage = 1;
+                    render();
+                });
+            }
 
             render();
         });

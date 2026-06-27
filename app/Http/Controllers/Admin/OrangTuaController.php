@@ -9,11 +9,25 @@ use Illuminate\Http\Request;
 
 class OrangTuaController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $search = $request->string('q')->trim()->toString();
+
         $data = OrangTua::with('user', 'siswa')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('nama', 'like', '%'.$search.'%')
+                        ->orWhere('email', 'like', '%'.$search.'%')
+                        ->orWhereHas('user', fn ($query) => $query->where('email', 'like', '%'.$search.'%'))
+                        ->orWhereHas('siswa', function ($query) use ($search) {
+                            $query->where('nis', 'like', '%'.$search.'%')
+                                ->orWhere('nama', 'like', '%'.$search.'%');
+                        });
+                });
+            })
             ->orderBy('nama')
-            ->paginate(100);
+            ->paginate(100)
+            ->withQueryString();
 
         return view('admin.orang_tua.index', compact('data'));
     }

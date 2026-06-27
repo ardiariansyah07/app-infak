@@ -12,16 +12,31 @@ use Illuminate\Support\Facades\DB;
 
 class KomitmenInfakController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $search = $request->string('q')->trim()->toString();
+
         $data = KomitmenInfak::with('siswaAkademik.siswa', 'siswaAkademik.rombel', 'siswaAkademik.rayon', 'siswaAkademik.tahunAjaran')
             ->join('siswa_akademik', 'siswa_akademik.id', '=', 'komitmen_infak.siswa_akademik_id')
             ->join('siswa', 'siswa.id', '=', 'siswa_akademik.siswa_id')
             ->join('rayon', 'rayon.id', '=', 'siswa_akademik.rayon_id')
+            ->join('rombel', 'rombel.id', '=', 'siswa_akademik.rombel_id')
+            ->join('tahun_ajaran', 'tahun_ajaran.id', '=', 'siswa_akademik.tahun_ajaran_id')
             ->select('komitmen_infak.*')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('siswa.nis', 'like', '%'.$search.'%')
+                        ->orWhere('siswa.nama', 'like', '%'.$search.'%')
+                        ->orWhere('rayon.nama', 'like', '%'.$search.'%')
+                        ->orWhere('rombel.nama', 'like', '%'.$search.'%')
+                        ->orWhere('tahun_ajaran.nama', 'like', '%'.$search.'%')
+                        ->orWhere('komitmen_infak.nominal_bulanan', 'like', '%'.$search.'%');
+                });
+            })
             ->orderBy('rayon.nama')
             ->orderBy('siswa.nis')
-            ->paginate(100);
+            ->paginate(100)
+            ->withQueryString();
 
         return view('admin.komitmen.index', [
             'data' => $data,

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Pembayaran extends Model
@@ -39,6 +40,41 @@ class Pembayaran extends Model
     protected $casts = [
         'tanggal' => 'date',
     ];
+
+    public function scopeSearch(Builder $query, string $search): Builder
+    {
+        if ($search === '') {
+            return $query;
+        }
+
+        $needle = strtolower($search);
+        $matchingSources = collect([
+            self::SUMBER_ADMIN => 'Input admin',
+            self::SUMBER_PETUGAS => 'Input petugas infak',
+            self::SUMBER_ORANG_TUA => 'Unggahan orang tua',
+            self::SUMBER_PEMBIMBING => 'Unggahan pembimbing rayon',
+            self::SUMBER_IMPORT_SALDO_AWAL => 'Import saldo awal',
+            self::SUMBER_IMPORT_TAGIHAN_AWAL => 'Import tagihan awal',
+            'unggahan_lama' => 'Unggahan bukti',
+        ])->filter(fn ($label) => str_contains(strtolower($label), $needle))->keys();
+        $matchingMethods = collect([
+            self::METODE_CASH => 'Cash',
+            self::METODE_TRANSFER => 'Transfer',
+            self::METODE_SALDO_AWAL => 'Saldo awal',
+        ])->filter(fn ($label) => str_contains(strtolower($label), $needle))->keys();
+
+        return $query->where(function (Builder $query) use ($search, $matchingSources, $matchingMethods) {
+            $query->whereHas('siswa', function (Builder $query) use ($search) {
+                $query->where('nis', 'like', '%'.$search.'%')
+                    ->orWhere('nama', 'like', '%'.$search.'%');
+            })
+                ->orWhere('tanggal', 'like', '%'.$search.'%')
+                ->orWhere('nominal', 'like', '%'.$search.'%')
+                ->orWhere('status_verifikasi', 'like', '%'.$search.'%')
+                ->when($matchingSources->isNotEmpty(), fn (Builder $query) => $query->orWhereIn('sumber', $matchingSources))
+                ->when($matchingMethods->isNotEmpty(), fn (Builder $query) => $query->orWhereIn('metode_pembayaran', $matchingMethods));
+        });
+    }
 
     public function siswa()
     {

@@ -12,23 +12,9 @@
     </div>
 </div>
 
-<form method="GET" class="card border-0 shadow-sm mb-4">
-    <div class="card-body d-flex gap-2 align-items-end flex-wrap">
-        <div class="flex-grow-1">
-            <label class="form-label">Cari Siswa</label>
-            <input type="search" name="q" value="{{ $search }}" class="form-control" placeholder="Cari NIS atau nama siswa">
-        </div>
-        <button class="btn btn-primary">
-            <i class="bi bi-search"></i>
-            Cari
-        </button>
-        <a href="{{ route('rayon.siswa.index') }}" class="btn btn-light border">Reset</a>
-    </div>
-</form>
-
 <div class="card border-0 shadow-sm">
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0" data-row-offset="{{ ($data->firstItem() ?? 1) - 1 }}">
+        <table class="table table-hover align-middle mb-0" data-server-paginated="true" data-row-offset="{{ ($data->firstItem() ?? 1) - 1 }}" data-total="{{ $data->total() }}">
             <thead class="table-light"><tr><th>NIS</th><th>Nama</th><th>Rombel</th><th>Rayon</th><th>Komitmen</th><th>Bulan Lunas</th><th>Bulan Belum</th><th>Nominal Tunggakan</th><th>Aksi</th></tr></thead>
             <tbody>
             @forelse($data as $akademik)

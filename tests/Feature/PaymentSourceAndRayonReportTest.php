@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\AutoGenerateMonthlyTagihan;
 use App\Models\Guru;
+use App\Models\KomitmenInfak;
+use App\Models\OrangTua;
 use App\Models\Pembayaran;
 use App\Models\Rayon;
 use App\Models\Rombel;
@@ -118,6 +121,104 @@ class PaymentSourceAndRayonReportTest extends TestCase
             ->assertHeader('Content-Type', 'application/pdf');
 
         $this->assertStringStartsWith('%PDF', $response->getContent());
+    }
+
+    public function test_global_table_search_uses_all_paginated_data_sources(): void
+    {
+        $this->withoutMiddleware(AutoGenerateMonthlyTagihan::class);
+
+        ['admin' => $admin, 'pembimbing' => $pembimbing, 'siswa' => $siswa, 'akademik' => $akademik] = $this->schoolData();
+        $orangTua = OrangTua::create([
+            'nama' => 'Orang Tua Pencarian',
+            'email' => 'pencarian@example.test',
+            'password' => '-',
+        ]);
+        $siswa->orangTua()->attach($orangTua);
+        KomitmenInfak::create([
+            'siswa_akademik_id' => $akademik->id,
+            'nominal_bulanan' => 50000,
+            'mulai_bulan' => '2026-06-01',
+        ]);
+        $targetPayment = Pembayaran::create([
+            'siswa_id' => $siswa->id,
+            'tanggal' => '2026-06-27',
+            'nominal' => 50000,
+            'sumber' => Pembayaran::SUMBER_ADMIN,
+            'metode_pembayaran' => Pembayaran::METODE_CASH,
+            'status_verifikasi' => 'valid',
+        ]);
+        $targetPayment->forceFill(['created_at' => '2020-01-01 00:00:00'])->save();
+
+        for ($index = 0; $index < 101; $index++) {
+            $decoy = Siswa::create([
+                'nis' => '10'.str_pad((string) $index, 5, '0', STR_PAD_LEFT),
+                'nama' => 'Siswa Pengisi '.$index,
+                'jenis_kelamin' => 'L',
+                'status' => 'aktif',
+            ]);
+            $decoyAkademik = SiswaAkademik::create([
+                'siswa_id' => $decoy->id,
+                'tahun_ajaran_id' => $akademik->tahun_ajaran_id,
+                'tingkat' => 'X',
+                'rombel_id' => $akademik->rombel_id,
+                'rayon_id' => $akademik->rayon_id,
+                'status' => 'aktif',
+            ]);
+            KomitmenInfak::create([
+                'siswa_akademik_id' => $decoyAkademik->id,
+                'nominal_bulanan' => 50000,
+                'mulai_bulan' => '2026-06-01',
+            ]);
+            TagihanInfak::create([
+                'siswa_akademik_id' => $decoyAkademik->id,
+                'periode' => '2026-07',
+                'nominal' => 50000,
+                'status' => 'belum',
+            ]);
+            Pembayaran::create([
+                'siswa_id' => $decoy->id,
+                'tanggal' => '2026-07-01',
+                'nominal' => 50000,
+                'sumber' => Pembayaran::SUMBER_ADMIN,
+                'metode_pembayaran' => Pembayaran::METODE_CASH,
+                'status_verifikasi' => 'valid',
+            ]);
+        }
+
+        foreach (['/admin/komitmen-infak', '/admin/tagihan', '/admin/pembayaran', '/admin/status-pembayaran'] as $url) {
+            $this->actingAs($admin)
+                ->get($url)
+                ->assertOk()
+                ->assertDontSee($siswa->nama);
+
+            $this->actingAs($admin)
+                ->get($url.'?q='.$siswa->nis)
+                ->assertOk()
+                ->assertSee($siswa->nama);
+        }
+
+        foreach (['/admin/orang-tua'] as $url) {
+            $this->actingAs($admin)
+                ->get($url.'?q='.$siswa->nis)
+                ->assertOk()
+                ->assertSee($siswa->nama);
+
+            $this->actingAs($admin)
+                ->get($url.'?q=data-yang-tidak-ada')
+                ->assertOk()
+                ->assertDontSee($siswa->nama);
+        }
+
+        $this->actingAs($pembimbing)
+            ->get('/rayon/pembayaran?q='.$siswa->nis)
+            ->assertOk()
+            ->assertSee($siswa->nama);
+
+        $this->actingAs($admin)
+            ->get('/admin/siswa')
+            ->assertOk()
+            ->assertDontSee('NIS, nama, rayon, atau rombel')
+            ->assertSee('data-server-paginated="true"', false);
     }
 
     private function schoolData(): array

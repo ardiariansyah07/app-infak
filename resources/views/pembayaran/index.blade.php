@@ -18,7 +18,7 @@
 
 <div class="card border-0 shadow-sm">
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0" data-row-offset="{{ ($data->firstItem() ?? 1) - 1 }}">
+        <table class="table table-hover align-middle mb-0" data-server-paginated="true" data-row-offset="{{ ($data->firstItem() ?? 1) - 1 }}" data-total="{{ $data->total() }}">
             <thead class="table-light"><tr><th>Tanggal</th><th>Siswa</th><th>Nominal</th><th>Metode</th><th>Bulan Dibayar</th><th>Sumber</th><th>Status</th><th>Bukti</th><th width="220">Aksi</th></tr></thead>
             <tbody>
             @forelse($data as $pembayaran)

@@ -13,14 +13,17 @@ use Illuminate\Validation\Rule;
 
 class PembayaranController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $siswaIds = $this->siswaIds();
+        $search = $request->string('q')->trim()->toString();
 
         $data = Pembayaran::with('siswa.akademikAktif.rombel', 'siswa.akademikAktif.rayon', 'tagihanInfak')
             ->whereIn('siswa_id', $siswaIds)
+            ->search($search)
             ->latest()
-            ->paginate(100);
+            ->paginate(100)
+            ->withQueryString();
 
         return view('rayon.pembayaran.index', compact('data'));
     }

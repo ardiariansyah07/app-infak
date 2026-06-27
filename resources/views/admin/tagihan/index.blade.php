@@ -45,11 +45,8 @@
 
 <form method="GET" class="card border-0 shadow-sm mb-4">
     <div class="card-body row g-2 align-items-end">
-        <div class="col-md-5">
-            <label class="form-label">Cari Siswa/NIS</label>
-            <input name="q" class="form-control" value="{{ $search }}" placeholder="Nama atau NIS">
-        </div>
-        <div class="col-md-3">
+        <input type="hidden" name="q" value="{{ $search }}">
+        <div class="col-md-4">
             <label class="form-label">Status</label>
             <select name="status" class="form-select">
                 <option value="">Semua</option>
@@ -58,7 +55,7 @@
                 <option value="lunas" @selected($status === 'lunas')>Lunas</option>
             </select>
         </div>
-        <div class="col-md-4 d-flex gap-2">
+        <div class="col-md-8 d-flex gap-2">
             <button class="btn btn-outline-primary"><i class="bi bi-search"></i> Filter</button>
             <a href="{{ route('admin.tagihan.index') }}" class="btn btn-light">Reset</a>
         </div>
@@ -67,7 +64,7 @@
 
 <div class="card border-0 shadow-sm">
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0" data-row-offset="{{ ($data->firstItem() ?? 1) - 1 }}">
+        <table class="table table-hover align-middle mb-0" data-server-paginated="true" data-row-offset="{{ ($data->firstItem() ?? 1) - 1 }}" data-total="{{ $data->total() }}">
             <thead class="table-light"><tr><th>Periode</th><th>Tahun Ajaran</th><th>Siswa</th><th>Rombel</th><th>Rayon</th><th>Nominal</th><th>Status</th><th width="140">Aksi</th></tr></thead>
             <tbody>
             @forelse($data as $tagihan)
