@@ -434,6 +434,8 @@ body{
 .table{
 
     margin-bottom:0;
+
+    color:#172033;
 }
 
 .table thead{
@@ -446,11 +448,67 @@ body{
     border:none;
 
     font-weight:600;
+
+    padding:13px 16px;
+
+    color:#111827;
+
+    background:#f8fafc;
+
+    white-space:nowrap;
 }
 
 .table tbody td{
 
     vertical-align:middle;
+
+    padding:12px 16px;
+
+    border-color:#e2e8f0;
+}
+
+.table tbody tr:last-child td{
+
+    border-bottom:0;
+}
+
+.table-hover tbody tr:hover td{
+
+    background:#f8fbff;
+}
+
+.table-card{
+
+    overflow:hidden;
+}
+
+.table-card > .table-responsive{
+
+    padding:20px 20px 0;
+}
+
+.table-card > .table-enhancer{
+
+    margin:0 !important;
+
+    padding:20px 20px 0;
+}
+
+.table-card > .table-enhancer + .table-responsive{
+
+    padding-top:16px;
+}
+
+.table-card > .table-responsive + .card-body{
+
+    padding:14px 20px 20px;
+
+    border-top:1px solid #eef2f7;
+}
+
+.table-card > .card-header + .table-enhancer{
+
+    padding-top:16px;
 }
 
 .table-number-column{
@@ -472,6 +530,27 @@ body{
     max-width:360px;
 }
 
+.table-search .input-group-text,
+.table-search .form-control{
+
+    border-color:#d8dee8;
+}
+
+.table-search .input-group-text{
+
+    border-radius:12px 0 0 12px;
+}
+
+.table-search .form-control{
+
+    border-radius:0 12px 12px 0;
+}
+
+.table-info{
+
+    color:#64748b !important;
+}
+
 .table-pagination{
 
     margin-top:12px;
@@ -482,6 +561,8 @@ body{
 .table-pagination .btn{
 
     min-width:36px;
+
+    border-radius:8px;
 }
 
 .table-bordered{
@@ -883,6 +964,12 @@ body{
 
         border:1px solid #e5e7eb !important;
     }
+
+    .table-enhancer,
+    .table-pagination{
+
+        display:none !important;
+    }
 }
 
 /* ===================================
@@ -904,6 +991,39 @@ body{
 =================================== */
 
 @media(max-width:768px){
+
+    .table-card > .table-responsive{
+
+        padding:12px 12px 0;
+    }
+
+    .table-card > .table-enhancer{
+
+        padding:12px 12px 0;
+    }
+
+    .table-card > .table-enhancer + .table-responsive{
+
+        padding-top:12px;
+    }
+
+    .table-search{
+
+        width:100%;
+
+        max-width:none;
+    }
+
+    .table-info{
+
+        width:100%;
+    }
+
+    .table thead th,
+    .table tbody td{
+
+        padding:11px 12px;
+    }
 
     .sidebar{
 

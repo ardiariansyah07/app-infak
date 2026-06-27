@@ -28,7 +28,7 @@
 
 <div class="card border-0 shadow-sm">
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <table class="table table-hover align-middle mb-0" data-row-offset="{{ ($data->firstItem() ?? 1) - 1 }}">
             <thead class="table-light"><tr><th>NIS</th><th>Nama</th><th>Rombel</th><th>Rayon</th><th>Komitmen</th><th>Bulan Lunas</th><th>Bulan Belum</th><th>Nominal Tunggakan</th><th>Aksi</th></tr></thead>
             <tbody>
             @forelse($data as $akademik)

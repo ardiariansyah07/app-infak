@@ -515,9 +515,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const card =
                 table.closest('.card');
 
-            if(card?.querySelector('.pagination')){
-                return;
-            }
+            const hasServerPagination =
+                Boolean(card?.querySelector('.pagination'));
+
+            const rowOffset =
+                Number.parseInt(table.dataset.rowOffset || '0', 10) || 0;
+
+            card?.classList.add('table-card');
 
             const theadRow =
                 table.querySelector('thead tr');
@@ -607,6 +611,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            dataRows.forEach((item, index) => {
+                item.numberCell.textContent = rowOffset + index + 1;
+            });
+
             const wrapper =
                 table.closest('.table-responsive') || table.parentElement;
 
@@ -639,15 +647,21 @@ document.addEventListener('DOMContentLoaded', () => {
             info.className =
                 'table-info text-muted small';
 
-            const pagination =
-                document.createElement('div');
+            const pagination = hasServerPagination
+                ? null
+                : document.createElement('div');
 
-            pagination.className =
-                'table-pagination d-flex align-items-center gap-2';
+            if(pagination){
+                pagination.className =
+                    'table-pagination d-flex align-items-center gap-2';
+            }
 
             controls.append(searchGroup, info);
             wrapper.before(controls);
-            wrapper.after(pagination);
+
+            if(pagination){
+                wrapper.after(pagination);
+            }
 
             const searchInput =
                 searchGroup.querySelector('input');
@@ -672,6 +686,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 filteredRows =
                     dataRows.filter(item => item.searchText.includes(keyword));
 
+                if(hasServerPagination){
+                    originalRows.forEach(item => {
+                        item.row.hidden = true;
+                    });
+
+                    filteredRows.forEach(item => {
+                        item.row.hidden = false;
+                    });
+
+                    emptySearchRow.hidden =
+                        filteredRows.length > 0;
+
+                    info.textContent =
+                        `Menampilkan ${filteredRows.length} dari ${dataRows.length} data pada halaman ini`;
+
+                    return;
+                }
+
                 const totalPages =
                     Math.max(1, Math.ceil(filteredRows.length / pageSize));
 
@@ -693,7 +725,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     .slice(start, end)
                     .forEach((item, index) => {
                         item.row.hidden = false;
-                        item.numberCell.textContent = start + index + 1;
+                        item.numberCell.textContent = rowOffset + start + index + 1;
                     });
 
                 emptySearchRow.hidden =
